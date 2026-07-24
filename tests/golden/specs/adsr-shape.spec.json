@@ -1,0 +1,23 @@
+{
+  "durationMs": 800.0,
+  "meta": {
+    "description": "golden render: adsr-shape",
+    "name": "adsr-shape",
+    "tags": [
+      "golden"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 50.0,
+        "decayMs": 200.0,
+        "releaseMs": 150.0,
+        "sustainLevel": 0.5
+      },
+      "fundamentalHz": 440.0,
+      "waveform": "sine"
+    }
+  ]
+}

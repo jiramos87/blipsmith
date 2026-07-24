@@ -1,0 +1,60 @@
+[build-system]
+requires = [
+  "scikit-build-core>=0.10",
+  "pybind11>=2.12",
+  "cmake>=3.20",
+  "ninja>=1.11",
+]
+build-backend = "scikit_build_core.build"
+
+[project]
+name = "blipsmith"
+version = "0.1.0"
+description = "An agent-playable lo-fi synthesizer: deterministic C++ DSP core, MCP and CLI surfaces."
+requires-python = ">=3.11"
+license = { text = "MIT" }
+authors = [{ name = "Javier Ramos", email = "jiramos87@gmail.com" }]
+keywords = ["audio", "synthesizer", "dsp", "mcp", "game-audio", "deterministic"]
+classifiers = [
+  "License :: OSI Approved :: MIT License",
+  "Programming Language :: Python :: 3",
+  "Programming Language :: C++",
+  "Topic :: Multimedia :: Sound/Audio :: Sound Synthesis",
+]
+dependencies = ["pydantic>=2.7"]
+
+[dependency-groups]
+dev = [
+  "mypy>=1.11",
+  "pytest>=8.0",
+  "ruff>=0.6",
+]
+
+# Console scripts land here as their items ship:
+#   blipsmith     -> B11 (CLI)
+#   blipsmith-mcp -> B12 (MCP server over stdio)
+
+[tool.scikit-build]
+minimum-version = "0.10"
+build-dir = "build/{wheel_tag}"
+wheel.packages = ["src/blipsmith"]
+cmake.version = ">=3.20"
+cmake.build-type = "Release"
+
+[tool.ruff]
+line-length = 100
+src = ["src", "tests", "scripts"]
+
+[tool.ruff.lint]
+select = ["E", "F", "W", "I", "UP", "B", "SIM", "RUF", "PTH"]
+
+[tool.mypy]
+python_version = "3.11"
+mypy_path = "src"
+files = ["src", "tests", "scripts"]
+strict = true
+warn_unused_configs = true
+
+[tool.pytest.ini_options]
+testpaths = ["tests"]
+addopts = "-q"

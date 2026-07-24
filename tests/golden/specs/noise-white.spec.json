@@ -1,0 +1,23 @@
+{
+  "durationMs": 500.0,
+  "meta": {
+    "description": "golden render: noise-white",
+    "name": "noise-white",
+    "tags": [
+      "golden"
+    ]
+  },
+  "seed": 12345,
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 5.0,
+        "decayMs": 120.0,
+        "releaseMs": 80.0,
+        "sustainLevel": 0.4
+      },
+      "waveform": "noise_white"
+    }
+  ]
+}

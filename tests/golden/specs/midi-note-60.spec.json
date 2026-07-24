@@ -1,0 +1,23 @@
+{
+  "durationMs": 500.0,
+  "meta": {
+    "description": "golden render: midi-note-60",
+    "name": "midi-note-60",
+    "tags": [
+      "golden"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 0.0,
+        "decayMs": 0.0,
+        "releaseMs": 0.0,
+        "sustainLevel": 1.0
+      },
+      "fundamentalMidi": 60,
+      "waveform": "sine"
+    }
+  ]
+}

@@ -1,0 +1,24 @@
+{
+  "durationMs": 500.0,
+  "meta": {
+    "description": "golden render: pulse-165-duty25",
+    "name": "pulse-165-duty25",
+    "tags": [
+      "golden"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 5.0,
+        "decayMs": 120.0,
+        "releaseMs": 80.0,
+        "sustainLevel": 0.4
+      },
+      "fundamentalHz": 165.0,
+      "pulseDuty": 0.25,
+      "waveform": "pulse"
+    }
+  ]
+}

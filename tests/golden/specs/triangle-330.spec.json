@@ -1,0 +1,23 @@
+{
+  "durationMs": 500.0,
+  "meta": {
+    "description": "golden render: triangle-330",
+    "name": "triangle-330",
+    "tags": [
+      "golden"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 5.0,
+        "decayMs": 120.0,
+        "releaseMs": 80.0,
+        "sustainLevel": 0.4
+      },
+      "fundamentalHz": 330.0,
+      "waveform": "triangle"
+    }
+  ]
+}

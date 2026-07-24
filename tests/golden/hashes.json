@@ -1,0 +1,11 @@
+{
+  "adsr-shape.spec.json": "f0d061076771780dc370a28a418f4c0b26ecb7a735a061c40613fb83190a154d",
+  "midi-note-60.spec.json": "4faa03156fd10d07ebd6d159866dc2c4286afa15a806792cf69f3e0c6155defa",
+  "noise-pink.spec.json": "d0eb081954cd38f3ea92d1ecded74c6c0b090d3610d50f7457fdc725e13f83bf",
+  "noise-white.spec.json": "5ad9dfdbd6cdd47723f2fd32f0e907b7e71f37392ff3e775eee0772fe3df67bb",
+  "pulse-165-duty25.spec.json": "c857fc98cc8cd32f9d195ee43a8796aec33b2ca073baca53fb4e9092f02aa5ab",
+  "saw-110.spec.json": "7642c13d90662209208b7059a18422e8e0d2fd152058f96eda971edd27ac0eca",
+  "sine-440.spec.json": "6728a129a2efc3feb1fcd453a4d18810c7756f5559061a8b8c716f705e5e2b76",
+  "square-220.spec.json": "56e2fc620a3658b29813d91ac1745a41b79db303d87de2e914bf55666d246095",
+  "triangle-330.spec.json": "3a27ba6e43b4552b1be9ecb1cd5ad394d32d9508e16b7979a911bcfbb2ad5f0e"
+}
