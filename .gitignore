@@ -1,0 +1,33 @@
+# Python
+__pycache__/
+*.py[cod]
+.venv/
+.pytest_cache/
+.ruff_cache/
+.mypy_cache/
+*.egg-info/
+
+# uv.lock is intentionally committed: determinism is this project's contract,
+# and CI must resolve the same dependency set the developer built against.
+
+# Native build artifacts
+/build/
+/dist/
+/wheelhouse/
+*.so
+*.pyd
+*.dylib
+CMakeCache.txt
+CMakeFiles/
+
+# Env / secrets
+.env
+.env.local
+
+# OS
+.DS_Store
+
+# Rendered audio scratch (specs are the source of truth, not WAVs)
+/out/
+*.wav
+!tests/**/golden/*.wav
