@@ -71,10 +71,11 @@ def test_two_noise_voices_do_not_share_a_stream() -> None:
         count = struct.unpack_from("<I", wav, 40)[0] // 2
         return list(struct.unpack_from(f"<{count}h", wav, 44))
 
-    doubled = samples(one_voice)
-    summed = samples(two_voices)
-    # Identical streams would sum to exactly twice the single voice.
-    assert any(abs(s - 2 * d) > 1 for s, d in zip(summed, doubled, strict=True))
+    # Identical streams would sum to exactly twice the single voice, and since
+    # B07 the master bus normalizes each render to the same target, so twice the
+    # signal would come back as the *same* file. Different files prove the two
+    # voices are drawing from different streams.
+    assert samples(two_voices) != samples(one_voice)
 
 
 def test_seed_does_not_disturb_a_deterministic_waveform() -> None:

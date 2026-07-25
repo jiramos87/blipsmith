@@ -1,7 +1,6 @@
 #include "env.h"
 
 namespace blipsmith {
-namespace {
 
 std::uint32_t ms_to_frames(double ms, int sampleRate) {
     if (ms <= 0.0 || sampleRate <= 0) {
@@ -10,8 +9,6 @@ std::uint32_t ms_to_frames(double ms, int sampleRate) {
     const double frames = (ms * static_cast<double>(sampleRate)) / 1000.0;
     return static_cast<std::uint32_t>(frames);
 }
-
-}  // namespace
 
 AmpEnvelope::AmpEnvelope(const Adsr& adsr, std::uint32_t totalFrames, int sampleRate)
     : attackFrames_(ms_to_frames(adsr.attackMs, sampleRate)),

@@ -1,0 +1,34 @@
+{
+  "durationMs": 400.0,
+  "meta": {
+    "description": "golden render: hard-driven distortion then a gentle wavefold",
+    "name": "fx-distortion",
+    "tags": [
+      "golden",
+      "fx"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 2.0,
+        "decayMs": 90.0,
+        "releaseMs": 130.0,
+        "sustainLevel": 0.5
+      },
+      "effects": [
+        {
+          "drive": 0.85,
+          "kind": "distortion"
+        },
+        {
+          "drive": 0.3,
+          "kind": "wavefold"
+        }
+      ],
+      "fundamentalHz": 165.0,
+      "waveform": "sine"
+    }
+  ]
+}

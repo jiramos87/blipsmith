@@ -48,6 +48,19 @@ def peak(samples: list[float]) -> float:
     return max(abs(s) for s in samples)
 
 
+def unit_pcm(payload: dict[str, Any]) -> list[float]:
+    """Render, then scale by the render's own peak.
+
+    Since B07 the master bus normalizes every render to the limiter's target, so
+    absolute amplitude is the bus's business and no longer the oscillator's.
+    These tests are about waveform *shape*, so they measure each render against
+    its own peak and stay true whatever level the bus decides on.
+    """
+    samples = pcm(payload)
+    top = peak(samples)
+    return [s / top for s in samples] if top > 0.0 else samples
+
+
 def rms(samples: list[float]) -> float:
     return math.sqrt(sum(s * s for s in samples) / len(samples))
 
@@ -87,7 +100,7 @@ def test_waveform_render_is_byte_identical(waveform: str) -> None:
 def test_sine_matches_an_ideal_sine() -> None:
     """The table is built from a fixed Taylor polynomial, so it should track the
     real thing to within int16 quantization."""
-    samples = pcm(voice("sine", fundamentalHz=440.0))
+    samples = unit_pcm(voice("sine", fundamentalHz=440.0))
     worst = max(
         abs(value - math.sin(2 * math.pi * 440.0 * i / SAMPLE_RATE))
         for i, value in enumerate(samples)
@@ -96,7 +109,7 @@ def test_sine_matches_an_ideal_sine() -> None:
 
 
 def test_square_is_two_valued() -> None:
-    samples = pcm(voice("square", fundamentalHz=220.0))
+    samples = unit_pcm(voice("square", fundamentalHz=220.0))
     assert set(round(s, 4) for s in samples) <= {1.0, -1.0}
 
 
@@ -123,12 +136,12 @@ def test_pulse_at_half_duty_matches_a_square() -> None:
     [("sine", 1 / math.sqrt(2)), ("square", 1.0), ("triangle", 1 / math.sqrt(3))],
 )
 def test_waveform_rms_matches_its_geometry(waveform: str, expected_rms: float) -> None:
-    samples = pcm(voice(waveform, fundamentalHz=220.0))
+    samples = unit_pcm(voice(waveform, fundamentalHz=220.0))
     assert rms(samples) == pytest.approx(expected_rms, abs=0.01)
 
 
 def test_saw_ramps_upward_then_resets() -> None:
-    samples = pcm(voice("saw", fundamentalHz=100.0))
+    samples = unit_pcm(voice("saw", fundamentalHz=100.0))
     period = SAMPLE_RATE // 100
     ramp = samples[1 : period - 1]
     rises = all(b >= a for a, b in itertools.pairwise(ramp))
@@ -152,7 +165,7 @@ def test_midi_note_renders_its_equal_tempered_pitch(note: int) -> None:
     """The conversion is a baked table precisely because 2**((n-69)/12) would go
     through the host libm and make the bytes platform-dependent."""
     expected_hz = 440.0 * 2 ** ((note - 69) / 12)
-    samples = pcm(voice("sine", fundamentalMidi=note, fundamentalHz=1.0))
+    samples = unit_pcm(voice("sine", fundamentalMidi=note, fundamentalHz=1.0))
     worst = max(
         abs(value - math.sin(2 * math.pi * expected_hz * i / SAMPLE_RATE))
         for i, value in enumerate(samples)
@@ -255,7 +268,7 @@ def test_release_ends_at_silence() -> None:
 
 def test_sustain_level_scales_the_held_section() -> None:
     def held_peak(sustain: float) -> float:
-        samples = pcm(
+        samples = unit_pcm(
             {
                 "voices": [
                     {
@@ -302,16 +315,21 @@ def test_zero_length_stages_are_not_a_division_by_zero() -> None:
 # --- The int16 rounding rule (first exercised here; B03 could only emit zeros) -
 
 
-def test_full_scale_is_encoded_without_wrapping() -> None:
-    """A square at unit gain sits exactly at full scale, which is where a
-    round-then-cast would wrap to the opposite sign if the clamp were missing."""
+def test_the_loudest_sample_is_encoded_without_wrapping() -> None:
+    """A square is the hottest thing this synth can make, and its peak is where
+    a round-then-cast would wrap to the opposite sign if the clamp were missing.
+
+    Since B07 that peak is the limiter's target rather than the int16 ceiling:
+    the bus normalizes every render, so nothing reaches full scale through the
+    spec surface any more. The encoder's clamp is still there, now as the guard
+    of last resort behind the bus's own."""
     spec, _ = validate_for_render(voice("square", fundamentalHz=220.0))
     wav: bytes = blipsmith._core.render(to_canonical_json(spec))["wav"]
     count = struct.unpack_from("<I", wav, 40)[0] // 2
     raw = struct.unpack_from(f"<{count}h", wav, 44)
 
-    assert max(raw) == 32767, "positive full scale should reach the int16 ceiling"
-    assert min(raw) == -32767, "negative full scale should mirror it, not wrap to -32768"
+    assert max(raw) == -min(raw), "the two polarities should mirror, not wrap"
+    assert max(raw) < 32767, "the bus should leave headroom below the ceiling"
     assert all(-32768 <= value <= 32767 for value in raw)
 
 

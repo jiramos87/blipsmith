@@ -1,0 +1,30 @@
+{
+  "durationMs": 600.0,
+  "meta": {
+    "description": "golden render: 6 Hz sine LFO to pitch over a triangle carrier",
+    "name": "lfo-vibrato",
+    "tags": [
+      "golden",
+      "lfo"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 10.0,
+        "decayMs": 80.0,
+        "releaseMs": 150.0,
+        "sustainLevel": 0.7
+      },
+      "fundamentalHz": 440.0,
+      "lfo": {
+        "depth": 0.08,
+        "rateHz": 6.0,
+        "shape": "sine",
+        "target": "pitch"
+      },
+      "waveform": "triangle"
+    }
+  ]
+}

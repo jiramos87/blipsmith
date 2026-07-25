@@ -19,19 +19,19 @@ namespace py = pybind11;
 
 namespace {
 
-// The five features that need spectral analysis land in B08; they are reported
-// as null rather than as a plausible-looking zero, so a caller steering by
-// numbers can tell "not measured yet" from "measured as silent".
+// All six features are measured from the finished audio. The driving agent
+// cannot hear, so these are how it checks whether the change it made did what
+// it wanted.
 py::dict render(const std::string& spec_json) {
     const blipsmith::RenderOutput output = blipsmith::render_spec_json(spec_json);
 
     py::dict features;
-    features["durationMs"] = output.durationMs;
-    features["peakDbfs"] = py::none();
-    features["rmsDbfs"] = py::none();
-    features["estimatedFundamentalHz"] = py::none();
-    features["spectralCentroidHz"] = py::none();
-    features["attackTimeMs"] = py::none();
+    features["durationMs"] = output.features.durationMs;
+    features["peakDbfs"] = output.features.peakDbfs;
+    features["rmsDbfs"] = output.features.rmsDbfs;
+    features["estimatedFundamentalHz"] = output.features.estimatedFundamentalHz;
+    features["spectralCentroidHz"] = output.features.spectralCentroidHz;
+    features["attackTimeMs"] = output.features.attackTimeMs;
 
     py::dict result;
     result["wav"] = py::bytes(output.wav);

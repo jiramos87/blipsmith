@@ -1,0 +1,28 @@
+{
+  "durationMs": 400.0,
+  "meta": {
+    "description": "golden render: 4-bit crush on a saw",
+    "name": "lofi-bitcrush",
+    "tags": [
+      "golden",
+      "lofi"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 2.0,
+        "decayMs": 100.0,
+        "releaseMs": 120.0,
+        "sustainLevel": 0.6
+      },
+      "fundamentalHz": 220.0,
+      "lofi": {
+        "bitDepth": 4,
+        "decimation": 1
+      },
+      "waveform": "saw"
+    }
+  ]
+}

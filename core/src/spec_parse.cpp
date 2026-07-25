@@ -339,6 +339,91 @@ Waveform waveform_from(const JsonValue& voice) {
     return Waveform::Sine;
 }
 
+// Enum readers mirror waveform_from: the Python layer has already rejected any
+// value outside the closed set, so an unrecognized string here means the two
+// layers have drifted apart, and falling back to the documented default is the
+// least surprising way to degrade.
+LfoShape lfo_shape_from(const JsonValue& block) {
+    const JsonValue* found = block.find("shape");
+    if (found == nullptr || found->kind != JsonValue::Kind::String) {
+        return LfoShape::Sine;
+    }
+    if (found->text == "triangle") return LfoShape::Triangle;
+    if (found->text == "square") return LfoShape::Square;
+    if (found->text == "saw") return LfoShape::Saw;
+    return LfoShape::Sine;
+}
+
+LfoTarget lfo_target_from(const JsonValue& block) {
+    const JsonValue* found = block.find("target");
+    if (found == nullptr || found->kind != JsonValue::Kind::String) {
+        return LfoTarget::Pitch;
+    }
+    if (found->text == "amplitude") return LfoTarget::Amplitude;
+    if (found->text == "cutoff") return LfoTarget::Cutoff;
+    return LfoTarget::Pitch;
+}
+
+ModEnvTarget mod_env_target_from(const JsonValue& block) {
+    const JsonValue* found = block.find("target");
+    if (found == nullptr || found->kind != JsonValue::Kind::String) {
+        return ModEnvTarget::Pitch;
+    }
+    return found->text == "cutoff" ? ModEnvTarget::Cutoff : ModEnvTarget::Pitch;
+}
+
+AmMode am_mode_from(const JsonValue& block) {
+    const JsonValue* found = block.find("mode");
+    if (found == nullptr || found->kind != JsonValue::Kind::String) {
+        return AmMode::Am;
+    }
+    return found->text == "ring" ? AmMode::Ring : AmMode::Am;
+}
+
+FilterType filter_type_from(const JsonValue& block) {
+    const JsonValue* found = block.find("type");
+    if (found == nullptr || found->kind != JsonValue::Kind::String) {
+        return FilterType::Lowpass;
+    }
+    if (found->text == "highpass") return FilterType::Highpass;
+    if (found->text == "bandpass") return FilterType::Bandpass;
+    return FilterType::Lowpass;
+}
+
+EffectKind effect_kind_from(const JsonValue& block) {
+    const JsonValue* found = block.find("kind");
+    if (found == nullptr || found->kind != JsonValue::Kind::String) {
+        return EffectKind::Distortion;
+    }
+    if (found->text == "wavefold") return EffectKind::Wavefold;
+    if (found->text == "delay") return EffectKind::Delay;
+    if (found->text == "reverb") return EffectKind::Reverb;
+    return EffectKind::Distortion;
+}
+
+std::vector<Effect> effects_from(const JsonValue& voice) {
+    std::vector<Effect> effects;
+    const JsonValue* found = voice.find("effects");
+    if (found == nullptr || found->kind != JsonValue::Kind::Array) {
+        return effects;
+    }
+    for (const JsonValue& entry : found->items) {
+        if (entry.kind != JsonValue::Kind::Object) {
+            continue;
+        }
+        Effect effect;
+        effect.kind = effect_kind_from(entry);
+        effect.drive = number_or(entry, "drive", effect.drive);
+        effect.timeMs = number_or(entry, "timeMs", effect.timeMs);
+        effect.feedback = number_or(entry, "feedback", effect.feedback);
+        effect.mixWet = number_or(entry, "mixWet", effect.mixWet);
+        effect.roomSize = number_or(entry, "roomSize", effect.roomSize);
+        effect.damping = number_or(entry, "damping", effect.damping);
+        effects.push_back(effect);
+    }
+    return effects;
+}
+
 Adsr adsr_from(const JsonValue* block) {
     Adsr envelope;
     if (block == nullptr) {
@@ -390,6 +475,47 @@ Spec parse_spec(const std::string& json) {
                 voice.fundamentalMidi = int_or(entry, "fundamentalMidi", -1);
                 voice.pulseDuty = number_or(entry, "pulseDuty", voice.pulseDuty);
                 voice.ampEnv = adsr_from(object_at(entry, "ampEnv"));
+
+                if (const JsonValue* block = object_at(entry, "modEnv")) {
+                    voice.hasModEnv = true;
+                    voice.modEnv.target = mod_env_target_from(*block);
+                    voice.modEnv.amount = number_or(*block, "amount", voice.modEnv.amount);
+                    voice.modEnv.attackMs = number_or(*block, "attackMs", voice.modEnv.attackMs);
+                    voice.modEnv.decayMs = number_or(*block, "decayMs", voice.modEnv.decayMs);
+                }
+                if (const JsonValue* block = object_at(entry, "lfo")) {
+                    voice.hasLfo = true;
+                    voice.lfo.target = lfo_target_from(*block);
+                    voice.lfo.shape = lfo_shape_from(*block);
+                    voice.lfo.rateHz = number_or(*block, "rateHz", voice.lfo.rateHz);
+                    voice.lfo.depth = number_or(*block, "depth", voice.lfo.depth);
+                }
+                if (const JsonValue* block = object_at(entry, "fm")) {
+                    voice.hasFm = true;
+                    voice.fm.ratio = number_or(*block, "ratio", voice.fm.ratio);
+                    voice.fm.index = number_or(*block, "index", voice.fm.index);
+                }
+                if (const JsonValue* block = object_at(entry, "am")) {
+                    voice.hasAm = true;
+                    voice.am.mode = am_mode_from(*block);
+                    voice.am.rateHz = number_or(*block, "rateHz", voice.am.rateHz);
+                    voice.am.depth = number_or(*block, "depth", voice.am.depth);
+                }
+
+                if (const JsonValue* block = object_at(entry, "filter")) {
+                    voice.hasFilter = true;
+                    voice.filter.type = filter_type_from(*block);
+                    voice.filter.cutoffHz = number_or(*block, "cutoffHz", voice.filter.cutoffHz);
+                    voice.filter.resonance =
+                        number_or(*block, "resonance", voice.filter.resonance);
+                }
+                if (const JsonValue* block = object_at(entry, "lofi")) {
+                    voice.hasLoFi = true;
+                    voice.lofi.bitDepth = int_or(*block, "bitDepth", voice.lofi.bitDepth);
+                    voice.lofi.decimation = int_or(*block, "decimation", voice.lofi.decimation);
+                }
+                voice.effects = effects_from(entry);
+
                 voice.pan = number_or(entry, "pan", voice.pan);
                 voice.mixDb = number_or(entry, "mixDb", voice.mixDb);
                 voice.track = int_or(entry, "track", voice.track);

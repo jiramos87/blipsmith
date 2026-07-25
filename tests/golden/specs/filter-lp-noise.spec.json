@@ -1,0 +1,29 @@
+{
+  "durationMs": 400.0,
+  "meta": {
+    "description": "golden render: resonant lowpass over white noise, with headroom for the B07 bus",
+    "name": "filter-lp-noise",
+    "tags": [
+      "golden",
+      "filter"
+    ]
+  },
+  "seed": 1234,
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 2.0,
+        "decayMs": 120.0,
+        "releaseMs": 150.0,
+        "sustainLevel": 0.3
+      },
+      "filter": {
+        "cutoffHz": 1200.0,
+        "resonance": 2.5,
+        "type": "lowpass"
+      },
+      "waveform": "noise_white"
+    }
+  ]
+}

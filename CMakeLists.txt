@@ -43,8 +43,14 @@ find_package(pybind11 CONFIG REQUIRED)
 # cross-toolchain variable in the audio path, and the core is small enough that
 # the lost inlining does not matter.
 pybind11_add_module(_core NO_EXTRAS
+  core/src/bus.cpp
   core/src/core.cpp
   core/src/env.cpp
+  core/src/features.cpp
+  core/src/filter.cpp
+  core/src/fx.cpp
+  core/src/lofi.cpp
+  core/src/mod.cpp
   core/src/noise.cpp
   core/src/osc.cpp
   core/src/render.cpp

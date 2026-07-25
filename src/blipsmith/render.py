@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from blipsmith import _core
+from blipsmith.explain import explain_spec
 from blipsmith.result import (
     ErrorCode,
     ErrorInfo,
@@ -128,6 +129,7 @@ def render(
         status=RenderStatus.RENDERED_WITH_WARNINGS if warnings else RenderStatus.RENDERED_OK,
         wavPath=str(wav_path),
         specPath=str(spec_path),
+        explanation=explain_spec(spec),
         features=rendered["features"],
         warnings=warnings,
     )

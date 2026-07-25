@@ -28,6 +28,13 @@ SUPPORTED_CHANNELS = (1, 2)
 SPEC_VERSION: Literal[1] = 1
 LIMITER_TARGET_DBFS = -1.0
 
+# A filter cutoff has a second, render-time ceiling: a biquad's coefficients only
+# stay well conditioned comfortably below Nyquist, and at Nyquist itself the
+# corner has nowhere left to sit. The published `cutoffHz` range is absolute; a
+# render caps it at this fraction of its own sample rate, which is why an 8 kHz
+# render clamps harder than a 44.1 kHz one.
+MAX_CUTOFF_FRACTION = 0.45
+
 
 @dataclass(frozen=True)
 class NumericRange:
@@ -151,3 +158,20 @@ RANGES: dict[tuple[str, str], NumericRange] = {
 # durationMs carries two documented maxima. The clamp pass swaps this in when the
 # spec has a composition, so a 4-minute piece is not truncated to a one-shot.
 DURATION_MS_COMPOSITION = NumericRange(10, 300_000, 1000, "ms", "composition render length", False)
+
+
+def cutoff_range_for(sample_rate: int) -> NumericRange:
+    """The cutoff bound for one render: the published range, capped below Nyquist.
+
+    The clamp pass swaps this in the way it swaps the composition duration, so a
+    cutoff an agent authored for a 44.1 kHz render is pulled into range rather
+    than rejected when the same spec is rendered at 8 kHz.
+    """
+    published = RANGES[("Filter", "cutoffHz")]
+    return NumericRange(
+        published.minimum,
+        min(published.maximum, MAX_CUTOFF_FRACTION * sample_rate),
+        published.default,
+        published.unit,
+        "corner frequency, capped below Nyquist for this render's sample rate",
+    )

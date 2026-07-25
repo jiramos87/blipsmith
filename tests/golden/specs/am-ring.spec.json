@@ -1,0 +1,29 @@
+{
+  "durationMs": 400.0,
+  "meta": {
+    "description": "golden render: ring modulation at 220 Hz over a 330 Hz carrier",
+    "name": "am-ring",
+    "tags": [
+      "golden",
+      "am"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "am": {
+        "depth": 0.9,
+        "mode": "ring",
+        "rateHz": 220.0
+      },
+      "ampEnv": {
+        "attackMs": 5.0,
+        "decayMs": 100.0,
+        "releaseMs": 120.0,
+        "sustainLevel": 0.5
+      },
+      "fundamentalHz": 330.0,
+      "waveform": "sine"
+    }
+  ]
+}

@@ -6,6 +6,8 @@
 #include <cstdint>
 #include <string>
 
+#include "features.h"
+
 namespace blipsmith {
 
 struct RenderOutput {
@@ -13,9 +15,9 @@ struct RenderOutput {
     std::uint32_t frames = 0;
     int sampleRate = 22050;
     int channels = 1;
-    // Measured from the rendered PCM rather than restated from the spec, so it
-    // reflects the audio that actually exists.
-    double durationMs = 0.0;
+    // Measured from the rendered PCM rather than restated from the spec, so
+    // they reflect the audio that actually exists.
+    Features features;
 };
 
 RenderOutput render_spec_json(const std::string& specJson);

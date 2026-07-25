@@ -40,10 +40,10 @@ The shared names later items depend on, fixed here so items cannot drift apart.
 | B02 | SoundSpec contract: validation, clamping, ranges | B01 | L | high | done |
 | B03 | Core bridge, WAV encoder, render pipeline skeleton | B01, B02 | M | high | done |
 | B04 | Oscillators, noise, amp ADSR, no-libm gate | B03 | L | high | done |
-| B05 | Modulation: FM, AM/ring, LFO, mod envelope | B04 | M | high | pending |
-| B06 | Filter, lo-fi stage, effects | B04 | L | high | pending |
-| B07 | Master bus: mix, pan, limiter, clip guard | B04 | M | high | pending |
-| B08 | Acoustic features and explanations | B07 | M | high | pending |
+| B05 | Modulation: FM, AM/ring, LFO, mod envelope | B04 | M | high | done |
+| B06 | Filter, lo-fi stage, effects | B04 | L | high | done |
+| B07 | Master bus: mix, pan, limiter, clip guard | B04 | M | high | done |
+| B08 | Acoustic features and explanations | B07 | M | high | done |
 | B09 | Composition engine: tracks, notes, steps, tempo, swing | B07 | L | high | pending |
 | B10 | Preset library: game SFX and lo-fi drum kit | B05, B06, B07 | M | med | pending |
 | B11 | CLI: render, batch, vary, explain, verify-golden | B08, B09 | L | high | pending |
@@ -211,6 +211,8 @@ Note (2026-07-24, from B02): MIDI-note-to-hertz conversion is deliberately left 
   - Given all existing golden renders, When re-rendered after this item, Then none clips (this item may legitimately regenerate `hashes.json` once, since the bus now sits in the path; the regeneration is a single commit with the rationale recorded).
 - **Needs human:** none.
 
+Note (2026-07-24, from B07): `master.gainDb` cannot change the level of a finished file. The item pins the order as master gain then limiter, and the limiter normalizes unconditionally (acceptance 2 requires a quiet spec to be brought *up* to the target), so the normalizer scales the gain straight back out. Implemented as specified and pinned by `test_master_gain_cannot_move_the_finished_level`. `master.limiter.targetDbfs` is the loudness control that does bite, and per-voice `mixDb` still sets the balance between voices. If v1 wants `gainDb` to mean something, that is a spec change (drop the field, or move it after the limiter and accept renders that leave off target), not an implementation fix: it goes back through `/sequential-backlog`.
+
 Note (2026-07-24, from B04): multi-voice specs clip today, and this item is the fix. Voices currently sum straight into the mix at unit gain, so a three-voice triangle chord pins about 10% of its samples at full scale; single-voice renders are clean. `Voice.pan` and `Voice.mixDb` are parsed by the core but not yet applied, for the same reason: converting dB to linear needs `pow`, so it belongs with the bus and its baked gain table rather than scattered through the voice loop.
 
 ### B08 - Acoustic features and explanations
@@ -227,6 +229,8 @@ Note (2026-07-24, from B04): multi-voice specs clip today, and this item is the 
   - Given any render, When the result envelope is inspected, Then all six pinned feature keys are present and non-null.
   - Given a spec, When `explain_spec` runs twice, Then the same text is produced, and it names the waveform, pitch, envelope character, and active stages (filter, lo-fi, effects, modulation) in plain language.
 - **Needs human:** none.
+
+Note (2026-07-24, from B08): kissfft was NOT vendored, and `core/vendor/` does not exist. kissfft builds its twiddle factors with `cos`/`sin` from the host libm (`kf_cexp`), which the pinned determinism invariant bars and `scripts/check_no_libm.py` rejects on undefined symbols, so vendoring it as written would have failed the gate this repo runs on every build. The FFT is instead ~40 lines of radix-2 butterflies in `core/src/features.cpp` reading twiddles from the B04 sine table; at the 1024-point size used, every twiddle is an exact table entry rather than an interpolation, so this is more accurate than the libm version as well as deterministic. No third-party license is carried as a result. Same reasoning forced a deterministic `linear_to_db` (dBFS needs `log10`, equally barred): `tables.cpp`, exact exponent split plus a fixed-length series.
 
 ### B09 - Composition engine: tracks, notes, steps, tempo, swing
 

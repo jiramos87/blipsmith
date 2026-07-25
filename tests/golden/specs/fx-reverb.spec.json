@@ -1,0 +1,32 @@
+{
+  "durationMs": 700.0,
+  "meta": {
+    "description": "golden render: blip into a damped Schroeder reverb",
+    "name": "fx-reverb",
+    "tags": [
+      "golden",
+      "fx"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 0.0,
+        "decayMs": 30.0,
+        "releaseMs": 0.0,
+        "sustainLevel": 0.0
+      },
+      "effects": [
+        {
+          "damping": 0.4,
+          "kind": "reverb",
+          "mixWet": 0.7,
+          "roomSize": 0.65
+        }
+      ],
+      "fundamentalHz": 660.0,
+      "waveform": "triangle"
+    }
+  ]
+}

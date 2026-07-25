@@ -1,0 +1,30 @@
+{
+  "durationMs": 300.0,
+  "meta": {
+    "description": "golden render: mod envelope sweeping pitch down to the fundamental",
+    "name": "modenv-pew",
+    "tags": [
+      "golden",
+      "modenv"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 1.0,
+        "decayMs": 60.0,
+        "releaseMs": 100.0,
+        "sustainLevel": 0.4
+      },
+      "fundamentalHz": 660.0,
+      "modEnv": {
+        "amount": -0.7,
+        "attackMs": 0.0,
+        "decayMs": 90.0,
+        "target": "pitch"
+      },
+      "waveform": "square"
+    }
+  ]
+}

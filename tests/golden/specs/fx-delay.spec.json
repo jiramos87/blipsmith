@@ -1,0 +1,32 @@
+{
+  "durationMs": 700.0,
+  "meta": {
+    "description": "golden render: blip into an integer-sample delay with feedback",
+    "name": "fx-delay",
+    "tags": [
+      "golden",
+      "fx"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 0.0,
+        "decayMs": 25.0,
+        "releaseMs": 0.0,
+        "sustainLevel": 0.0
+      },
+      "effects": [
+        {
+          "feedback": 0.55,
+          "kind": "delay",
+          "mixWet": 0.6,
+          "timeMs": 110.0
+        }
+      ],
+      "fundamentalHz": 880.0,
+      "waveform": "square"
+    }
+  ]
+}

@@ -100,12 +100,12 @@ def test_features_dict_carries_every_pinned_key() -> None:
         "spectralCentroidHz",
         "attackTimeMs",
     }
-    # durationMs is measured from the rendered frames, so it is real already.
     assert features["durationMs"] == pytest.approx(1000.0)
-    # The rest need spectral analysis and are honestly null rather than zero,
-    # so a caller steering by numbers can tell "not measured" from "silent".
-    assert features["peakDbfs"] is None
-    assert features["spectralCentroidHz"] is None
+    # B03 returned the other five as nulls, meaning "not measured yet". B08
+    # measures them, so a null here now means a feature went missing rather
+    # than a stage being unbuilt. What each one *means* is tested in
+    # test_features.py; this only guards the bridge's shape.
+    assert all(value is not None for value in features.values())
 
 
 def test_core_render_is_byte_identical_across_calls() -> None:

@@ -1,0 +1,28 @@
+{
+  "durationMs": 400.0,
+  "meta": {
+    "description": "golden render: 12x sample-and-hold decimation on a triangle",
+    "name": "lofi-decimate",
+    "tags": [
+      "golden",
+      "lofi"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 2.0,
+        "decayMs": 100.0,
+        "releaseMs": 120.0,
+        "sustainLevel": 0.6
+      },
+      "fundamentalHz": 330.0,
+      "lofi": {
+        "bitDepth": 16,
+        "decimation": 12
+      },
+      "waveform": "triangle"
+    }
+  ]
+}

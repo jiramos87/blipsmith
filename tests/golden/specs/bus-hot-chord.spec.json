@@ -1,0 +1,61 @@
+{
+  "channels": 2,
+  "durationMs": 600.0,
+  "meta": {
+    "description": "golden render: four voices summing well past full scale, panned across the image",
+    "name": "bus-hot-chord",
+    "tags": [
+      "golden",
+      "bus"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 3.0,
+        "decayMs": 150.0,
+        "releaseMs": 200.0,
+        "sustainLevel": 0.6
+      },
+      "fundamentalHz": 110.0,
+      "pan": -0.8,
+      "waveform": "saw"
+    },
+    {
+      "ampEnv": {
+        "attackMs": 3.0,
+        "decayMs": 150.0,
+        "releaseMs": 200.0,
+        "sustainLevel": 0.6
+      },
+      "fundamentalHz": 165.0,
+      "pan": -0.3,
+      "waveform": "square"
+    },
+    {
+      "ampEnv": {
+        "attackMs": 3.0,
+        "decayMs": 150.0,
+        "releaseMs": 200.0,
+        "sustainLevel": 0.6
+      },
+      "fundamentalHz": 220.0,
+      "mixDb": -3.0,
+      "pan": 0.3,
+      "waveform": "triangle"
+    },
+    {
+      "ampEnv": {
+        "attackMs": 3.0,
+        "decayMs": 150.0,
+        "releaseMs": 200.0,
+        "sustainLevel": 0.6
+      },
+      "fundamentalHz": 330.0,
+      "mixDb": -6.0,
+      "pan": 0.8,
+      "waveform": "sine"
+    }
+  ]
+}

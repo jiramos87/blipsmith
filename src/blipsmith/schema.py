@@ -16,6 +16,7 @@ from pydantic.fields import FieldInfo
 
 from blipsmith.ranges import (
     DURATION_MS_COMPOSITION,
+    MAX_CUTOFF_FRACTION,
     MAX_VOICES,
     RANGES,
     SPEC_VERSION,
@@ -155,6 +156,9 @@ def get_schema() -> dict[str, Any]:
                 DURATION_MS_COMPOSITION.minimum,
                 DURATION_MS_COMPOSITION.maximum,
             ],
+            # Published so the caller can work out the real cutoff ceiling for
+            # the sample rate it picked, instead of discovering it as a warning.
+            "maxCutoffFraction": MAX_CUTOFF_FRACTION,
         },
         "models": models,
     }

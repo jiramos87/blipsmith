@@ -32,6 +32,7 @@ from blipsmith.ranges import (
     SPEC_VERSION,
     TRACK_COUNT,
     NumericRange,
+    cutoff_range_for,
 )
 from blipsmith.result import SpecError, SpecWarning, WarningCode, invalid_spec
 
@@ -445,7 +446,12 @@ def clamp_spec(spec: SoundSpec) -> tuple[SoundSpec, list[SpecWarning]]:
     """Pull every out-of-range number to its nearest bound, reporting each move."""
     working = spec.model_copy(deep=True)
     warnings: list[SpecWarning] = []
-    overrides: dict[tuple[str, str], NumericRange] = {}
+    # The two bounds that depend on the rest of the spec rather than on the field
+    # alone: a composition may run longer than a one-shot, and a filter cutoff
+    # has to stay below the Nyquist frequency of *this* render.
+    overrides: dict[tuple[str, str], NumericRange] = {
+        ("Filter", "cutoffHz"): cutoff_range_for(int(working.sampleRate))
+    }
     if working.composition is not None:
         overrides[("SoundSpec", "durationMs")] = DURATION_MS_COMPOSITION
     _clamp_model(working, "", warnings, overrides)

@@ -1,0 +1,28 @@
+{
+  "durationMs": 600.0,
+  "meta": {
+    "description": "golden render: 2-op FM at a non-integer ratio, bell decay",
+    "name": "fm-bell",
+    "tags": [
+      "golden",
+      "fm"
+    ]
+  },
+  "version": 1,
+  "voices": [
+    {
+      "ampEnv": {
+        "attackMs": 2.0,
+        "decayMs": 200.0,
+        "releaseMs": 250.0,
+        "sustainLevel": 0.25
+      },
+      "fm": {
+        "index": 5.0,
+        "ratio": 3.5
+      },
+      "fundamentalHz": 440.0,
+      "waveform": "sine"
+    }
+  ]
+}

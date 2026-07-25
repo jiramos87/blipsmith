@@ -7,8 +7,11 @@
 namespace blipsmith {
 namespace {
 
-constexpr double kPhaseScale = 4294967296.0;  // 2^32
 constexpr std::uint32_t kHalfTurn = 0x80000000U;
+
+// Far past any reachable pitch, and small enough that the cast to int64 below
+// stays inside its range whatever a caller multiplies the turn rate by.
+constexpr double kMaxTurnsPerSample = 1000000.0;
 
 // Phase as a fraction of a turn, in [0, 1).
 double turn_of(std::uint32_t phase) {
@@ -28,11 +31,14 @@ double interpolated_sine(std::uint32_t phase) {
 
 }  // namespace
 
-std::uint32_t phase_increment(double frequencyHz, int sampleRate) {
-    if (sampleRate <= 0 || frequencyHz <= 0.0) {
-        return 0;
+std::uint32_t turns_to_increment(double turnsPerSample) {
+    double turns = turnsPerSample;
+    if (!(turns > -kMaxTurnsPerSample)) {  // the negated form also catches NaN
+        turns = -kMaxTurnsPerSample;
     }
-    double turns = frequencyHz / static_cast<double>(sampleRate);
+    if (turns > kMaxTurnsPerSample) {
+        turns = kMaxTurnsPerSample;
+    }
     // Fold whole turns away before the cast: a frequency at or above the sample
     // rate would otherwise overflow the conversion, which is undefined.
     turns -= static_cast<double>(static_cast<std::int64_t>(turns));
@@ -40,6 +46,17 @@ std::uint32_t phase_increment(double frequencyHz, int sampleRate) {
         turns += 1.0;
     }
     return static_cast<std::uint32_t>(turns * kPhaseScale);
+}
+
+std::uint32_t phase_increment(double frequencyHz, int sampleRate) {
+    if (sampleRate <= 0 || frequencyHz <= 0.0) {
+        return 0;
+    }
+    return turns_to_increment(frequencyHz / static_cast<double>(sampleRate));
+}
+
+double sine_at_phase(std::uint32_t phase) {
+    return interpolated_sine(phase);
 }
 
 bool is_noise(Waveform waveform) {

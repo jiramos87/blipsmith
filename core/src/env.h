@@ -17,6 +17,11 @@
 
 namespace blipsmith {
 
+// Milliseconds to frames, truncating rather than rounding, so the mapping is
+// one fixed rule with no tie-breaking for the envelopes, the modulators, and
+// the render length to disagree about.
+std::uint32_t ms_to_frames(double ms, int sampleRate);
+
 class AmpEnvelope {
 public:
     AmpEnvelope(const Adsr& adsr, std::uint32_t totalFrames, int sampleRate);
