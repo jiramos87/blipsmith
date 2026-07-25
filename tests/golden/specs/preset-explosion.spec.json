@@ -1,0 +1,32 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 1200.0,
+  "meta": {
+    "name": "explosion",
+    "tags": ["sfx", "game", "explosion", "blast", "noise"],
+    "description": "A blast: driven pink noise under a lowpass falling from bright to rubble, plus a low boom."
+  },
+  "voices": [
+    {
+      "waveform": "noise_pink",
+      "ampEnv": { "attackMs": 0.0, "decayMs": 650.0, "sustainLevel": 0.0, "releaseMs": 320.0 },
+      "modEnv": { "target": "cutoff", "amount": -0.6, "attackMs": 0.0, "decayMs": 380.0 },
+      "filter": { "type": "lowpass", "cutoffHz": 2000.0, "resonance": 1.2 },
+      "lofi": { "bitDepth": 9, "decimation": 1 },
+      "effects": [
+        { "kind": "distortion", "drive": 0.35 },
+        { "kind": "reverb", "roomSize": 0.7, "damping": 0.5, "mixWet": 0.3 }
+      ]
+    },
+    {
+      "waveform": "sine",
+      "fundamentalHz": 55.0,
+      "mixDb": -2.0,
+      "ampEnv": { "attackMs": 0.0, "decayMs": 420.0, "sustainLevel": 0.0, "releaseMs": 180.0 },
+      "modEnv": { "target": "pitch", "amount": -0.35, "attackMs": 0.0, "decayMs": 140.0 }
+    }
+  ]
+}

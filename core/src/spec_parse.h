@@ -144,6 +144,32 @@ struct Voice {
     int track = 0;
 };
 
+// One scheduled event. The Python compiler has already expanded painted steps
+// into notes and baked swing into the start times, so the core sees one
+// representation and never has to know a step grid existed.
+struct Note {
+    double startBeat = 0.0;
+    double durationBeats = 1.0;
+    // -1 means "no pitch of its own": the voice plays at its own fundamental,
+    // which is what a drum hit wants.
+    int midiNote = -1;
+    double velocity = 0.8;
+};
+
+// `stepsPerBeat` and the composition's `swing` are deliberately not read here.
+// They describe how a pattern was authored, and the compiler has already spent
+// them; carrying them into the renderer would be a second chance to disagree.
+struct Track {
+    double gainDb = 0.0;
+    double pan = 0.0;
+    std::vector<Note> notes;
+};
+
+struct Composition {
+    double tempoBpm = 120.0;
+    std::vector<Track> tracks;
+};
+
 struct Limiter {
     double targetDbfs = -1.0;
 };
@@ -161,7 +187,10 @@ struct Spec {
     double durationMs = 1000.0;
     Master master;
     std::vector<Voice> voices;
+    // With a composition, voices are triggered by notes and nothing else: a
+    // track with no notes contributes silence rather than a held one-shot.
     bool hasComposition = false;
+    Composition composition;
 };
 
 // Throws std::runtime_error when the text is not parseable JSON.

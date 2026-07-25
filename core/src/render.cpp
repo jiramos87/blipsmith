@@ -11,11 +11,144 @@
 #include "mod.h"
 #include "noise.h"
 #include "osc.h"
+#include "seq.h"
 #include "spec_parse.h"
 #include "tables.h"
 #include "wav.h"
 
 namespace blipsmith {
+namespace {
+
+// One run of a voice: the whole per-voice chain, rendered into the bus from
+// `startFrame` for `frameCount` frames. A one-shot is a single run over the
+// whole file; a composition is one run per note. Everything the run needs is a
+// parameter, so a note can retune, re-level, and restart it without the chain
+// itself knowing which of the two it is serving.
+void render_run(const Spec& spec, const Voice& voice, int voiceIndex, double frequency,
+                double velocity, const AmpEnvelope& envelope, std::uint32_t startFrame,
+                std::uint32_t frameCount, const VoiceGains& gains, MasterBus& bus) {
+    Modulation modulation(voice, frequency, spec.sampleRate);
+    NoiseSource noise(spec.seed, voiceIndex);
+    LoFiStage lofi(voice.lofi);
+    EffectChain effects(voice.effects, spec.sampleRate);
+
+    // A static cutoff needs its coefficients worked out once. A modulated one is
+    // recomputed every frame, below.
+    Biquad filter;
+    if (voice.hasFilter) {
+        filter.set(biquad_coefficients(voice.filter.type, voice.filter.cutoffHz,
+                                       voice.filter.resonance, spec.sampleRate));
+    }
+    const bool sweepsCutoff = voice.hasFilter && modulation.modulatesCutoff();
+
+    std::uint32_t phase = 0;
+    for (std::uint32_t frame = 0; frame < frameCount; ++frame) {
+        modulation.step(frame);
+
+        // The chain runs oscillator -> FM -> AM -> envelope -> LFO. A voice with
+        // no modulation multiplies by exactly 1.0 and adds a zero phase offset,
+        // so its bytes are the ones B04 recorded.
+        double sample;
+        switch (voice.waveform) {
+            case Waveform::NoiseWhite:
+                sample = noise.white();
+                break;
+            case Waveform::NoisePink:
+                sample = noise.pink();
+                break;
+            default:
+                sample = oscillator_sample(voice.waveform, phase + modulation.fmPhaseOffset(),
+                                           voice.pulseDuty);
+                phase += modulation.carrierIncrement();
+                break;
+        }
+
+        sample *= modulation.amGain();
+        sample *= envelope.at(frame);
+        sample *= modulation.tremoloGain();
+
+        // ... then filter -> lo-fi -> effects. Each stage is skipped rather than
+        // run with neutral settings, so a voice that asks for none of them still
+        // renders the bytes B04 recorded.
+        if (voice.hasFilter) {
+            if (sweepsCutoff) {
+                filter.set(biquad_coefficients(
+                    voice.filter.type, voice.filter.cutoffHz * modulation.cutoffRatio(),
+                    voice.filter.resonance, spec.sampleRate));
+            }
+            sample = filter.process(sample);
+        }
+        if (voice.hasLoFi) {
+            sample = lofi.process(sample);
+        }
+        if (!voice.effects.empty()) {
+            sample = effects.process(sample);
+        }
+
+        bus.add(startFrame + frame, sample * velocity, gains);
+    }
+}
+
+// A voice on a track answers to both: the levels add in decibels and the pans
+// add across the image, so a voice can sit off-centre *within* a track that is
+// itself placed off-centre. The bus clamps the sum back into the image.
+VoiceGains gains_for_track(const Voice& voice, const Track& track, int channels) {
+    return voice_gains(voice.pan + track.pan, voice.mixDb + track.gainDb, channels);
+}
+
+void render_one_shots(const Spec& spec, std::uint32_t frames, MasterBus& bus) {
+    for (std::size_t index = 0; index < spec.voices.size(); ++index) {
+        const Voice& voice = spec.voices[index];
+        render_run(spec, voice, static_cast<int>(index), voice_frequency(voice), 1.0,
+                   AmpEnvelope(voice.ampEnv, frames, spec.sampleRate), 0, frames,
+                   voice_gains(voice.pan, voice.mixDb, spec.channels), bus);
+    }
+}
+
+void render_composition(const Spec& spec, std::uint32_t frames, MasterBus& bus) {
+    const std::vector<Track>& tracks = spec.composition.tracks;
+
+    // Scheduled once per track rather than once per voice: two voices sharing a
+    // track share its pattern, and the note times cannot be allowed to depend on
+    // which voice is asking.
+    std::vector<std::vector<ScheduledNote>> plan;
+    plan.reserve(tracks.size());
+    for (const Track& track : tracks) {
+        plan.push_back(schedule_track(track, spec.composition.tempoBpm, spec.sampleRate));
+    }
+
+    for (std::size_t index = 0; index < spec.voices.size(); ++index) {
+        const Voice& voice = spec.voices[index];
+        if (voice.track < 0 || static_cast<std::size_t>(voice.track) >= tracks.size()) {
+            continue;
+        }
+        const Track& track = tracks[static_cast<std::size_t>(voice.track)];
+        const VoiceGains gains = gains_for_track(voice, track, spec.channels);
+
+        for (const ScheduledNote& note : plan[static_cast<std::size_t>(voice.track)]) {
+            if (note.startFrame >= frames) {
+                continue;
+            }
+            const AmpEnvelope envelope =
+                AmpEnvelope::gated(voice.ampEnv, note.heldFrames, spec.sampleRate);
+
+            // A tail that would run past the end of the file is truncated there
+            // rather than dropped: the note was audible, it just does not get to
+            // finish ringing.
+            std::uint32_t count = envelope.totalFrames();
+            const std::uint32_t room = frames - note.startFrame;
+            if (count > room) {
+                count = room;
+            }
+
+            render_run(spec, voice, static_cast<int>(index),
+                       trigger_frequency(voice, note.midiNote), note.velocity, envelope,
+                       note.startFrame, count, gains, bus);
+        }
+    }
+}
+
+}  // namespace
 
 RenderOutput render_spec_json(const std::string& specJson) {
     const Spec spec = parse_spec(specJson);
@@ -27,74 +160,13 @@ RenderOutput render_spec_json(const std::string& specJson) {
 
     MasterBus bus(out.frames, spec.channels);
 
-    for (std::size_t index = 0; index < spec.voices.size(); ++index) {
-        const Voice& voice = spec.voices[index];
-        const VoiceGains gains = voice_gains(voice.pan, voice.mixDb, spec.channels);
-
-        const double frequency = voice.fundamentalMidi >= 0
-                                     ? midi_to_hz(voice.fundamentalMidi)
-                                     : voice.fundamentalHz;
-        const AmpEnvelope envelope(voice.ampEnv, out.frames, spec.sampleRate);
-        Modulation modulation(voice, frequency, spec.sampleRate);
-        NoiseSource noise(spec.seed, static_cast<int>(index));
-        LoFiStage lofi(voice.lofi);
-        EffectChain effects(voice.effects, spec.sampleRate);
-
-        // A static cutoff needs its coefficients worked out once. A modulated
-        // one is recomputed every frame, below.
-        Biquad filter;
-        if (voice.hasFilter) {
-            filter.set(biquad_coefficients(voice.filter.type, voice.filter.cutoffHz,
-                                           voice.filter.resonance, spec.sampleRate));
-        }
-        const bool sweepsCutoff = voice.hasFilter && modulation.modulatesCutoff();
-
-        std::uint32_t phase = 0;
-        for (std::uint32_t frame = 0; frame < out.frames; ++frame) {
-            modulation.step(frame);
-
-            // The chain runs oscillator -> FM -> AM -> envelope -> LFO. A voice
-            // with no modulation multiplies by exactly 1.0 and adds a zero phase
-            // offset, so its bytes are the ones B04 recorded.
-            double sample;
-            switch (voice.waveform) {
-                case Waveform::NoiseWhite:
-                    sample = noise.white();
-                    break;
-                case Waveform::NoisePink:
-                    sample = noise.pink();
-                    break;
-                default:
-                    sample = oscillator_sample(
-                        voice.waveform, phase + modulation.fmPhaseOffset(), voice.pulseDuty);
-                    phase += modulation.carrierIncrement();
-                    break;
-            }
-
-            sample *= modulation.amGain();
-            sample *= envelope.at(frame);
-            sample *= modulation.tremoloGain();
-
-            // ... then filter -> lo-fi -> effects. Each stage is skipped rather
-            // than run with neutral settings, so a voice that asks for none of
-            // them still renders the bytes B04 recorded.
-            if (voice.hasFilter) {
-                if (sweepsCutoff) {
-                    filter.set(biquad_coefficients(
-                        voice.filter.type, voice.filter.cutoffHz * modulation.cutoffRatio(),
-                        voice.filter.resonance, spec.sampleRate));
-                }
-                sample = filter.process(sample);
-            }
-            if (voice.hasLoFi) {
-                sample = lofi.process(sample);
-            }
-            if (!voice.effects.empty()) {
-                sample = effects.process(sample);
-            }
-
-            bus.add(frame, sample, gains);
-        }
+    // With a composition, notes are the only thing that makes a voice sound. A
+    // track nobody wrote notes for contributes silence, which is what lets an
+    // agent build a piece one track at a time.
+    if (spec.hasComposition) {
+        render_composition(spec, out.frames, bus);
+    } else {
+        render_one_shots(spec, out.frames, bus);
     }
 
     // Features are measured on the bus output rather than on the encoded file:

@@ -1,0 +1,22 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 260.0,
+  "meta": {
+    "name": "laser",
+    "tags": ["sfx", "game", "laser", "shot", "sci-fi"],
+    "description": "A descending pew: a bright saw dropped three octaves by a fast pitch envelope."
+  },
+  "voices": [
+    {
+      "waveform": "saw",
+      "fundamentalHz": 440.0,
+      "ampEnv": { "attackMs": 0.0, "decayMs": 190.0, "sustainLevel": 0.0, "releaseMs": 40.0 },
+      "modEnv": { "target": "pitch", "amount": -0.85, "attackMs": 0.0, "decayMs": 90.0 },
+      "filter": { "type": "lowpass", "cutoffHz": 6000.0, "resonance": 1.1 },
+      "lofi": { "bitDepth": 8, "decimation": 1 }
+    }
+  ]
+}

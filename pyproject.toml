@@ -21,7 +21,10 @@ classifiers = [
   "Programming Language :: C++",
   "Topic :: Multimedia :: Sound/Audio :: Sound Synthesis",
 ]
-dependencies = ["pydantic>=2.7"]
+dependencies = [
+  "mcp>=1.28.1",
+  "pydantic>=2.7",
+]
 
 [dependency-groups]
 dev = [
@@ -30,9 +33,9 @@ dev = [
   "ruff>=0.6",
 ]
 
-# Console scripts land here as their items ship:
-#   blipsmith     -> B11 (CLI)
-#   blipsmith-mcp -> B12 (MCP server over stdio)
+[project.scripts]
+blipsmith = "blipsmith.cli:main"
+blipsmith-mcp = "blipsmith.mcp_server:main"
 
 [tool.scikit-build]
 minimum-version = "0.10"

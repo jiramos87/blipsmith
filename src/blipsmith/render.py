@@ -19,6 +19,7 @@ from pathlib import Path
 from typing import Any
 
 from blipsmith import _core
+from blipsmith.composition import compile_composition
 from blipsmith.explain import explain_spec
 from blipsmith.result import (
     ErrorCode,
@@ -74,6 +75,12 @@ def render(
     except SpecError as exc:
         return exc.as_result()
 
+    # The compiled spec is what the core plays; the authored one is what the
+    # sidecar keeps, so a human still edits the step grid they painted rather
+    # than the note list it expanded into. Both render the same bytes.
+    compiled, composition_warnings = compile_composition(spec)
+    warnings = [*warnings, *composition_warnings]
+
     stem = name if name is not None else spec.meta.name
     # The name reaches here from spec `meta`, which an agent controls. Keeping it
     # a plain filename stops a crafted name from writing outside the output
@@ -100,12 +107,12 @@ def render(
         for target in (wav_path, spec_path):
             if target.exists():
                 return _failed(
-                    f"refusing to overwrite {target}. Pass overwrite=True to replace it, "
-                    "or render under a different name."
+                    f"refusing to overwrite {target}. Use the overwrite option "
+                    "(`--overwrite` on the CLI) to replace it, or render under a different name."
                 )
 
     try:
-        rendered = _core.render(to_canonical_json(spec))
+        rendered = _core.render(to_canonical_json(compiled))
     except Exception as exc:  # the core reports every failure as an exception
         return _failed(f"the native core failed to render: {exc}")
 

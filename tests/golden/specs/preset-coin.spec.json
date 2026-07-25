@@ -1,0 +1,42 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 700.0,
+  "meta": {
+    "name": "coin",
+    "tags": ["sfx", "game", "pickup", "coin", "chime"],
+    "description": "The pickup chime: a short blip stepping up into a held note, on a thin pulse."
+  },
+  "voices": [
+    {
+      "waveform": "pulse",
+      "fundamentalHz": 988.0,
+      "pulseDuty": 0.5,
+      "track": 0,
+      "ampEnv": { "attackMs": 0.0, "decayMs": 70.0, "sustainLevel": 0.75, "releaseMs": 90.0 },
+      "lofi": { "bitDepth": 8, "decimation": 1 }
+    }
+  ],
+  "composition": {
+    "tempoBpm": 240.0,
+    "swing": 0.0,
+    "tracks": [
+      {
+        "gainDb": 0.0,
+        "pan": 0.0,
+        "stepsPerBeat": 4,
+        "notes": [
+          { "startBeat": 0.0, "midiNote": 83, "durationBeats": 0.25, "velocity": 0.9 },
+          { "startBeat": 0.25, "midiNote": 90, "durationBeats": 1.5, "velocity": 1.0 }
+        ],
+        "steps": []
+      },
+      { "notes": [], "steps": [] },
+      { "notes": [], "steps": [] },
+      { "notes": [], "steps": [] },
+      { "notes": [], "steps": [] }
+    ]
+  }
+}

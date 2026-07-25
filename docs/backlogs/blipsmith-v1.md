@@ -44,10 +44,10 @@ The shared names later items depend on, fixed here so items cannot drift apart.
 | B06 | Filter, lo-fi stage, effects | B04 | L | high | done |
 | B07 | Master bus: mix, pan, limiter, clip guard | B04 | M | high | done |
 | B08 | Acoustic features and explanations | B07 | M | high | done |
-| B09 | Composition engine: tracks, notes, steps, tempo, swing | B07 | L | high | pending |
-| B10 | Preset library: game SFX and lo-fi drum kit | B05, B06, B07 | M | med | pending |
-| B11 | CLI: render, batch, vary, explain, verify-golden | B08, B09 | L | high | pending |
-| B12 | MCP server: session verbs and stateless contract | B08, B09, B10 | L | high | pending |
+| B09 | Composition engine: tracks, notes, steps, tempo, swing | B07 | L | high | done |
+| B10 | Preset library: game SFX and lo-fi drum kit | B05, B06, B07 | M | med | done |
+| B11 | CLI: render, batch, vary, explain, verify-golden | B08, B09 | L | high | done |
+| B12 | MCP server: session verbs and stateless contract | B08, B09, B10 | L | high | done |
 | B13 | Golden corpus, two-platform CI, wheels, README | B11, B12 | L | high | pending |
 
 Statuses: pending -> in-progress -> done. The implementer updates its own row; it never edits an item body. The ledger order is a valid topological sort of the depends-on graph.
@@ -249,6 +249,20 @@ Note (2026-07-24, from B08): kissfft was NOT vendored, and `core/vendor/` does n
   - Given swing set to zero vs a nonzero value, When the same pattern renders, Then offbeat note times shift by the documented swing formula and renders are byte-identical per setting.
 - **Needs human:** none.
 
+Note (2026-07-25): the swing formula, previously unspecified, is now pinned in `composition.py`: a note whose start lands on an **odd position of its track's own grid** (`startBeat * stepsPerBeat`, within 1e-9) is delayed by `swing / stepsPerBeat` beats, which is `swing` of one step. Onbeat positions and notes deliberately placed between steps are left alone. It applies to explicit notes and painted steps alike, which is what makes acceptance 2's equality hold at all: the "equivalent note list" would otherwise have to be pre-shuffled by hand. `stepsPerBeat` being per track is what lets one setting shuffle sixteenths on a hat and eighths on a bass.
+
+Note (2026-07-25): `Note.midiNote` is now optional (`int | None`, default null), which contradicts the B02 note listing it among the required fields. A painted step already allows a null pitch meaning "play the voice's own fundamental", and a step has to compile into a note, so without this a drum grid could not exist: a kick tuned to 55 Hz would be forced onto whatever MIDI number the compiler invented for it. The two fields now mirror each other exactly, and `ranges.py` carries the same description for both so the published schema says what null means.
+
+Note (2026-07-25): compilation is idempotent by construction, and load-bearing that it is. `to_canonical_json` runs the compiler on the way to the core, so every surface (render, the golden harness, later the CLI and MCP) shows the core one representation without having to remember to compile; `render()` also compiles separately to collect the warnings. The compiled spec has no steps left and carries `swing = 0`, so the second pass provably moves nothing. Compiled notes are also **sorted** (start, pitch, duration, velocity): notes are summed in scheduling order and floating-point addition is not associative, so the same pattern typed in a different order could otherwise differ in its last bit.
+
+Note (2026-07-25): the sidecar keeps the pattern as it was authored (steps stay steps, `swing` stays what it was set to) while the core receives the compiled notes. A human editing the committed spec finds the grid they painted rather than the note list it expanded into, and the file still re-renders byte-identically, which is the property B11 depends on.
+
+Note (2026-07-25): files beyond the listed set, each one required rather than convenient. `core/src/spec_parse.cpp/.h` grew the `Note`/`Track`/`Composition` structs (the B03 note flagged this as owed). `core/src/env.cpp/.h` gained `AmpEnvelope::gated`: a one-shot has no key-up and anchors its release to the end of the file, while a note releases when the note ends, so the two are different envelopes over the same ADSR; `at()` also gained a past-the-tail guard, since squaring a negative remaining fraction grows instead of fading. `src/blipsmith/spec.py` carries the model change above, the composition-defaults-to-stereo validator (the pinned default B02 did not implement: an explicit `channels` still wins), and the canonicalization hook. `src/blipsmith/render.py` merges the compile warnings into the result. `schema.py` publishes `channelsDefaultOneShot` / `channelsDefaultComposition`, because a conditional default cannot be expressed as a field default and an agent that cannot hear should not discover stereo from the file size. `CMakeLists.txt` lists `seq.cpp`. All 20 pre-existing golden hashes are unchanged: the one-shot path renders exactly the bytes B08 recorded.
+
+Note (2026-07-25): each note is a full run of the voice chain from a clean slate (fresh phase, filter state, effects, and noise stream seeded from `(seed, voiceIndex)` as before), which is why a hat sounds like itself on every hit rather than drifting through the pattern, and why an exact duplicate note would have doubled the amplitude precisely if it were not dropped. Track gain and voice `mixDb` add in decibels; track pan and voice pan add across the image and the bus clamps the sum, so a voice can sit off-centre within a track that is itself placed off-centre. Cost measured on dev hardware: a 30-second five-track composition with 216 notes renders in 51 ms, against B13's 2-second target.
+
+Note (2026-07-25, for B13 or `/sequential-backlog`): two authoring mistakes a composition still swallows silently. Notes written on a track that no voice is assigned to are inaudible with no warning, and a composition whose tracks are all empty renders a silent file, even though a spec with zero *voices* is refused as `invalid_spec` precisely so silence is never emitted. Both are consistent with this item's acceptance (an empty track contributes silence and the render succeeds), so neither was folded into this diff; if v1 wants them warned, that is a new warning code and a spec change.
+
 ### B10 - Preset library: game SFX and lo-fi drum kit
 
 - **Depends on:** B05, B06, B07
@@ -262,6 +276,18 @@ Note (2026-07-24, from B08): kissfft was NOT vendored, and `core/vendor/` does n
   - Given an unknown preset name, When loaded, Then `invalid_spec` lists the valid names and session state is unchanged.
   - Given every preset file, When validated against the B02 contract, Then it parses with zero clamp warnings (presets are authored in-range).
 - **Needs human:** preset sound design benefits from a human ear pass; the item ships with agent-authored parameters judged by acoustic features, and Javier spot-listens before B13 freezes the golden corpus.
+
+Note (2026-07-25): 13 presets shipped, exactly the archetypes the item names: `laser`, `jump`, `coin`, `explosion`, `hit`, `powerup`, `ui-blip` (tagged `sfx`) and `kick`, `snare`, `hat-closed`, `hat-open`, `clap`, `tom` (tagged `drum`). The two families are read from those tags by the coverage test, so a preset cannot join a family by renaming itself. All 13 render at seed 0 with zero clamp warnings and peak at -1.0 dBFS.
+
+Note (2026-07-25): the ear pass is still owed and is the only open work here. Renders for listening are at `blipsmith-out/presets/*.wav` (regenerate with `load_preset` through `render`). What the numbers already confirm, so a listening pass can concentrate on taste rather than on correctness: pitch direction on every mod-envelope preset (`laser` 1837 -> 490 Hz, `kick` 75 -> 50, `tom` 175 -> 130, `jump` 125 -> 262 rising), the clap's four decaying bursts, the closed hat silent by 60 ms where the open one still rings at 400 ms, and the powerup's four rising onsets an octave apart.
+
+Note (2026-07-25): `coin` and `powerup` carry a `composition` rather than being single one-shots, because both are sequences (a blip stepping up into a held note; a four-step arpeggio) and voices in a one-shot all start at frame zero. Both pin `channels: 1` explicitly, since a game sound effect wants mono and B09 made a composition default to stereo. This is the first use of the composition engine as an authoring tool rather than as a feature.
+
+Note (2026-07-25): golden coverage is a **copy** of each preset at `tests/golden/specs/preset-{name}.spec.json`, not a reference to the shipped file. The pinned corpus contract is a map from spec *filename* to hash, and `test_every_recorded_hash_still_has_a_spec` requires a 1:1 match with the files in that directory, so a golden has to be a file there. `test_the_golden_copy_matches_the_preset_it_was_taken_from` compares the two byte for byte, which turns the duplication into a drift guard: editing a preset without re-recording its golden fails the gate rather than leaving a hash that guards a file nobody ships.
+
+Note (2026-07-25): presets ship as package data with no packaging configuration. Verified against a built wheel rather than assumed: `scikit-build-core`'s `wheel.packages = ["src/blipsmith"]` carries `blipsmith/presets/*.spec.json` into `blipsmith-0.1.0-cp313-cp313-macosx_26_0_arm64.whl`, so `load_preset` works for someone who pip-installed rather than cloned. B13's cibuildwheel job inherits this for free.
+
+Note (2026-07-25, for B13): `.gitignore` ignores `/out/`, but the pinned output policy defaults to `./blipsmith-out`. WAVs are covered by the separate `*.wav` rule, so the leak is the sidecars: a user's first default render leaves untracked `{name}.spec.json` files in the repo root. One line to fix, in the item that owns the public repo shape.
 
 ### B11 - CLI: render, batch, vary, explain, verify-golden
 
@@ -280,6 +306,18 @@ Note (2026-07-24, from B08): kissfft was NOT vendored, and `core/vendor/` does n
   - Given a broken/missing native core, When any CLI command runs, Then it fails fast with the actionable rebuild message, never a fallback.
 - **Needs human:** none.
 
+Note (2026-07-25): argparse, not typer. The item allowed either, and typer would have been the first runtime dependency added since pydantic; "all deps MIT/BSD" is cheapest to keep true by not adding any. The whole CLI is one module with no synthesis logic: every command reads a file, calls `blipsmith.render` or `explain_spec`, and prints. `test_the_cli_renders_through_the_shared_pipeline` pins that by rendering the same spec both ways and comparing bytes, so the MCP surface cannot drift from this one.
+
+Note (2026-07-25): `vary` changes `meta.name` as well as `seed`, which is a deliberate deviation from the acceptance's "each spec differing only in `seed`". With the name left alone, all N sidecars carry the same `meta.name`, so `blipsmith batch` over the output directory renders every variation to one filename and fails on the overwrite guard for all but the first. `meta` never reaches the audio path (the core parses no field of it), so the *sound* still differs by seed alone, and every variation now re-renders from its own sidecar with no extra arguments, which is what the same acceptance's next clause asks for. Seeds are `base + 1 .. base + n`, wrapping modulo the documented maximum rather than clamping, since clamping would hand out the same seed twice and call them two variations.
+
+Note (2026-07-25): `batch` globs `*.spec.json`, the suffix the output policy already pins, and treats "no files matched" as a failure rather than a successful run of nothing: a build script that renders zero assets and exits 0 is the failure nobody notices. `verify-golden` reports four states, two beyond the acceptance's match/mismatch: `UNKNOWN` for a spec with no recorded hash and `ORPHAN` for a recorded hash whose spec is gone. Both are ways a corpus silently stops covering what it claims to, which is the one thing this command exists to catch.
+
+Note (2026-07-25, from B03): the overwrite refusal message said "Pass overwrite=True to replace it", which is the Python API and means nothing to someone at a terminal. Reworded once in `render.py` to name the option neutrally and give the CLI spelling, since that message now has two audiences. No test asserted the old wording.
+
+Note (2026-07-25): `scripts/verify.sh` needed no edit, as B01's note predicted: its CLI step is conditional on `blipsmith.cli` being importable, and landing the module turned the `skip` into a live `blipsmith --help` check. The gate now reads 6 pass, 1 skip (MCP boot, B12). Exit codes are 1 for every failure the tool detects and argparse's own 2 for a usage error.
+
+Note (2026-07-25, for B13 or `/sequential-backlog`): the B10 preset library has no CLI surface. `list_presets` / `load_preset` are reachable from Python and will be MCP tools in B12, but a human at a terminal cannot list or start from a preset without knowing the file path inside the installed package. Not in this item's acceptance, so not added; a `blipsmith presets` / `--preset` flag would be a small follow-up and is worth deciding before the README freezes the documented surface.
+
 ### B12 - MCP server: session verbs and stateless contract
 
 - **Depends on:** B08, B09, B10
@@ -296,6 +334,20 @@ Note (2026-07-24, from B08): kissfft was NOT vendored, and `core/vendor/` does n
   - Given every pinned tool, When the integration suite runs, Then each tool is exercised at least once and each publishes an input schema.
   - Given `blipsmith-mcp` launched with no arguments, When an MCP initialize handshake is performed over stdio, Then it succeeds (this is the verify-gate boot check).
 - **Needs human:** none.
+
+Note (2026-07-25): all 30 pinned tools ship and are published with input schemas, on `mcp` 1.28.1 via `FastMCP`. Every mutation runs the same pattern: edit a plain dict copy of the spec, validate and clamp the whole thing through B02, adopt only if it passed. That is what makes "a refusal changes nothing" true by construction rather than by care, and it means the session has no second validation path to drift from `spec.py`. Setters patch rather than replace: an agent adjusting the attack keeps the decay it set three calls ago, because silently resetting it is a change it cannot hear.
+
+Note (2026-07-25): `load_preset` is listed among the stateless verbs but had to be stateful. Acceptance 2 is "load_preset then grouped setters then render", which only means anything if the preset landed in the session; as a pure reader it would leave the setters editing an empty session and the render refusing for want of voices. It adopts the preset (replacing the session) and reports clamp warnings like any other edit.
+
+Note (2026-07-25): `import_spec` takes one parameter that accepts an object *or* JSON text, rather than the two mutually exclusive parameters the shape first suggested. FastMCP pre-parses any string argument that happens to be valid JSON, so a `specJson: str` parameter can never receive well-formed JSON text: it arrives as a dict. The single tolerant parameter handles all three cases a client can produce (object, JSON text, double-encoded text), and malformed text still arrives as a string, which is exactly the case the acceptance requires to be a typed `invalid_spec`.
+
+Note (2026-07-25): starting a composition (the first `set_tempo_swing`, `add_notes`, `set_steps`, `set_track`, or `clear_track` call) switches the render to stereo, the pinned default for a composition. A session begins as a mono one-shot, and B09's stereo default only applies when a spec arrives with a composition already in it, so without this an agent that built a five-track piece knob by knob would get its pans folded down and no way to notice. `set_render_options(channels=1)` overrides it and sticks.
+
+Note (2026-07-25): `set_fundamental` takes hz or midi, never both, and setting either clears the other. A MIDI note wins over hertz in the core, so a stale note left behind would make a hertz change inaudible, which is the one kind of failure this caller cannot detect. Refusals return a typed result (`status`, `error.validValues`) rather than raising, so the agent reads the valid set instead of a stack trace; a wrong argument *type* is still caught earlier by the SDK against the published schema.
+
+Note (2026-07-25): `scripts/verify.sh` needed no edit, again as B01 predicted. Its MCP step runs `python -m blipsmith.mcp_server --boot-check`, and that flag now launches the real server as a subprocess (the console script when installed, the module otherwise, both with no arguments) and completes an initialize plus list_tools round trip over stdio. Importing the module would have proven none of that. **The gate now runs all seven steps with no skips for the first time.**
+
+Note (2026-07-25, for B13): the dependency tree stopped being strictly MIT/BSD. `mcp` itself is MIT, but it pulls `certifi` (MPL-2.0), `python-multipart` (Apache-2.0), and `typing-extensions` (PSF-2.0), all transitive and all permissive, none of them blocking an MIT release. CLAUDE.md and the PRD both claim "all deps MIT/BSD"; the README's license section should say what is actually shipped rather than repeat the claim.
 
 ### B13 - Golden corpus, two-platform CI, wheels, README
 

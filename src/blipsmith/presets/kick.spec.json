@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 400.0,
+  "meta": {
+    "name": "kick",
+    "tags": ["drum", "kit", "kick", "bass-drum", "lo-fi"],
+    "description": "The kit's kick: a 55 Hz sine punched down from an octave and a half above."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fundamentalHz": 55.0,
+      "ampEnv": { "attackMs": 0.0, "decayMs": 170.0, "sustainLevel": 0.0, "releaseMs": 70.0 },
+      "modEnv": { "target": "pitch", "amount": -0.4, "attackMs": 0.0, "decayMs": 55.0 }
+    }
+  ]
+}

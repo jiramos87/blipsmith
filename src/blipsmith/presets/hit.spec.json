@@ -1,0 +1,28 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 260.0,
+  "meta": {
+    "name": "hit",
+    "tags": ["sfx", "game", "hit", "damage", "impact"],
+    "description": "A blunt damage thud: a driven noise burst over a short low knock."
+  },
+  "voices": [
+    {
+      "waveform": "noise_white",
+      "ampEnv": { "attackMs": 0.0, "decayMs": 70.0, "sustainLevel": 0.0, "releaseMs": 40.0 },
+      "filter": { "type": "bandpass", "cutoffHz": 1200.0, "resonance": 1.5 },
+      "lofi": { "bitDepth": 7, "decimation": 1 },
+      "effects": [{ "kind": "distortion", "drive": 0.3 }]
+    },
+    {
+      "waveform": "triangle",
+      "fundamentalHz": 90.0,
+      "mixDb": -2.0,
+      "ampEnv": { "attackMs": 0.0, "decayMs": 90.0, "sustainLevel": 0.0, "releaseMs": 50.0 },
+      "modEnv": { "target": "pitch", "amount": -0.35, "attackMs": 0.0, "decayMs": 50.0 }
+    }
+  ]
+}

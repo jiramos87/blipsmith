@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 120.0,
+  "meta": {
+    "name": "hat-closed",
+    "tags": ["drum", "kit", "hat", "closed", "lo-fi"],
+    "description": "A closed hat: a 25 ms tick of highpassed noise, crushed to 6 bits."
+  },
+  "voices": [
+    {
+      "waveform": "noise_white",
+      "ampEnv": { "attackMs": 0.0, "decayMs": 25.0, "sustainLevel": 0.0, "releaseMs": 15.0 },
+      "filter": { "type": "highpass", "cutoffHz": 6500.0, "resonance": 0.8 },
+      "lofi": { "bitDepth": 6, "decimation": 1 }
+    }
+  ]
+}

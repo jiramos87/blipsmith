@@ -1,0 +1,44 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 900.0,
+  "meta": {
+    "name": "powerup",
+    "tags": ["sfx", "game", "powerup", "arpeggio", "reward"],
+    "description": "A reward flourish: a four-step arpeggio climbing an octave on a thin pulse."
+  },
+  "voices": [
+    {
+      "waveform": "pulse",
+      "fundamentalHz": 523.0,
+      "pulseDuty": 0.25,
+      "track": 0,
+      "ampEnv": { "attackMs": 1.0, "decayMs": 95.0, "sustainLevel": 0.4, "releaseMs": 80.0 },
+      "lofi": { "bitDepth": 8, "decimation": 1 }
+    }
+  ],
+  "composition": {
+    "tempoBpm": 300.0,
+    "swing": 0.0,
+    "tracks": [
+      {
+        "gainDb": 0.0,
+        "pan": 0.0,
+        "stepsPerBeat": 4,
+        "notes": [
+          { "startBeat": 0.0, "midiNote": 72, "durationBeats": 0.9, "velocity": 0.75 },
+          { "startBeat": 1.0, "midiNote": 76, "durationBeats": 0.9, "velocity": 0.8 },
+          { "startBeat": 2.0, "midiNote": 79, "durationBeats": 0.9, "velocity": 0.85 },
+          { "startBeat": 3.0, "midiNote": 84, "durationBeats": 1.4, "velocity": 1.0 }
+        ],
+        "steps": []
+      },
+      { "notes": [], "steps": [] },
+      { "notes": [], "steps": [] },
+      { "notes": [], "steps": [] },
+      { "notes": [], "steps": [] }
+    ]
+  }
+}

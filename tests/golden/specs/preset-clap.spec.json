@@ -1,0 +1,23 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 450.0,
+  "meta": {
+    "name": "clap",
+    "tags": ["drum", "kit", "clap", "hand-clap", "lo-fi"],
+    "description": "A clap: one short noise burst turned into a handful by a 12 ms delay, then a small room."
+  },
+  "voices": [
+    {
+      "waveform": "noise_white",
+      "ampEnv": { "attackMs": 0.0, "decayMs": 35.0, "sustainLevel": 0.0, "releaseMs": 25.0 },
+      "filter": { "type": "bandpass", "cutoffHz": 1400.0, "resonance": 1.4 },
+      "effects": [
+        { "kind": "delay", "timeMs": 12.0, "feedback": 0.5, "mixWet": 0.45 },
+        { "kind": "reverb", "roomSize": 0.35, "damping": 0.6, "mixWet": 0.2 }
+      ]
+    }
+  ]
+}

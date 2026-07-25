@@ -424,6 +424,41 @@ std::vector<Effect> effects_from(const JsonValue& voice) {
     return effects;
 }
 
+Composition composition_from(const JsonValue& block) {
+    Composition composition;
+    composition.tempoBpm = number_or(block, "tempoBpm", composition.tempoBpm);
+
+    const JsonValue* tracks = block.find("tracks");
+    if (tracks == nullptr || tracks->kind != JsonValue::Kind::Array) {
+        return composition;
+    }
+    for (const JsonValue& entry : tracks->items) {
+        Track track;
+        if (entry.kind == JsonValue::Kind::Object) {
+            track.gainDb = number_or(entry, "gainDb", track.gainDb);
+            track.pan = number_or(entry, "pan", track.pan);
+            const JsonValue* notes = entry.find("notes");
+            if (notes != nullptr && notes->kind == JsonValue::Kind::Array) {
+                for (const JsonValue& item : notes->items) {
+                    if (item.kind != JsonValue::Kind::Object) {
+                        continue;
+                    }
+                    Note note;
+                    note.startBeat = number_or(item, "startBeat", note.startBeat);
+                    note.durationBeats = number_or(item, "durationBeats", note.durationBeats);
+                    // Canonical JSON spells "no pitch of its own" as null, which
+                    // is not a number, so the fallback is what carries it.
+                    note.midiNote = int_or(item, "midiNote", -1);
+                    note.velocity = number_or(item, "velocity", note.velocity);
+                    track.notes.push_back(note);
+                }
+            }
+        }
+        composition.tracks.push_back(track);
+    }
+    return composition;
+}
+
 Adsr adsr_from(const JsonValue* block) {
     Adsr envelope;
     if (block == nullptr) {
@@ -462,6 +497,9 @@ Spec parse_spec(const std::string& json) {
 
     const JsonValue* composition = root.find("composition");
     spec.hasComposition = composition != nullptr && composition->kind == JsonValue::Kind::Object;
+    if (spec.hasComposition) {
+        spec.composition = composition_from(*composition);
+    }
 
     if (const JsonValue* voices = root.find("voices")) {
         if (voices->kind == JsonValue::Kind::Array) {

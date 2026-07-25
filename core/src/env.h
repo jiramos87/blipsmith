@@ -24,14 +24,27 @@ std::uint32_t ms_to_frames(double ms, int sampleRate);
 
 class AmpEnvelope {
 public:
+    // A one-shot: the release is anchored to the end of the render.
     AmpEnvelope(const Adsr& adsr, std::uint32_t totalFrames, int sampleRate);
+
+    // A note in a composition, which unlike a one-shot *does* have a key-up:
+    // the release starts when the note ends rather than when the file does, and
+    // the tail runs on past it. A note cut short mid-attack releases from
+    // whatever level it reached, which is what makes staccato playable.
+    static AmpEnvelope gated(const Adsr& adsr, std::uint32_t heldFrames, int sampleRate);
 
     // Gain in [0, 1] for the given frame.
     double at(std::uint32_t frame) const;
 
+    // Held plus release: how many frames the note is worth rendering for.
+    std::uint32_t totalFrames() const { return totalFrames_; }
+
 private:
+    AmpEnvelope() = default;
+
     double sustained(std::uint32_t frame) const;
 
+    std::uint32_t totalFrames_ = 0;
     std::uint32_t attackFrames_ = 0;
     std::uint32_t decayFrames_ = 0;
     std::uint32_t releaseFrames_ = 0;

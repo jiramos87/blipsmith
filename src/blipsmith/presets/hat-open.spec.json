@@ -1,0 +1,20 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 500.0,
+  "meta": {
+    "name": "hat-open",
+    "tags": ["drum", "kit", "hat", "open", "lo-fi"],
+    "description": "An open hat: the same highpassed noise, left ringing for a third of a second."
+  },
+  "voices": [
+    {
+      "waveform": "noise_white",
+      "ampEnv": { "attackMs": 0.0, "decayMs": 260.0, "sustainLevel": 0.08, "releaseMs": 150.0 },
+      "filter": { "type": "highpass", "cutoffHz": 6000.0, "resonance": 0.8 },
+      "lofi": { "bitDepth": 6, "decimation": 1 }
+    }
+  ]
+}

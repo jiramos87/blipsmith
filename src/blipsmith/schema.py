@@ -148,6 +148,10 @@ def get_schema() -> dict[str, Any]:
             "trackCount": TRACK_COUNT,
             "sampleRates": list(SUPPORTED_SAMPLE_RATES),
             "channels": list(SUPPORTED_CHANNELS),
+            # The one default that depends on the rest of the spec, published so
+            # an agent authoring a composition is not surprised by a stereo file.
+            "channelsDefaultOneShot": 1,
+            "channelsDefaultComposition": 2,
             "durationMsOneShot": [
                 RANGES[("SoundSpec", "durationMs")].minimum,
                 RANGES[("SoundSpec", "durationMs")].maximum,

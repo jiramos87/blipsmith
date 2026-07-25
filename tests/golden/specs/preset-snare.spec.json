@@ -1,0 +1,27 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 350.0,
+  "meta": {
+    "name": "snare",
+    "tags": ["drum", "kit", "snare", "lo-fi"],
+    "description": "The kit's snare: bandpassed white noise cracking over a short tuned body."
+  },
+  "voices": [
+    {
+      "waveform": "noise_white",
+      "ampEnv": { "attackMs": 0.0, "decayMs": 120.0, "sustainLevel": 0.0, "releaseMs": 70.0 },
+      "filter": { "type": "bandpass", "cutoffHz": 1600.0, "resonance": 1.1 },
+      "lofi": { "bitDepth": 8, "decimation": 1 }
+    },
+    {
+      "waveform": "triangle",
+      "fundamentalHz": 190.0,
+      "mixDb": -6.0,
+      "ampEnv": { "attackMs": 0.0, "decayMs": 60.0, "sustainLevel": 0.0, "releaseMs": 35.0 },
+      "modEnv": { "target": "pitch", "amount": -0.2, "attackMs": 0.0, "decayMs": 40.0 }
+    }
+  ]
+}

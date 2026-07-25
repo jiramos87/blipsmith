@@ -23,7 +23,7 @@ from enum import Enum, IntEnum, StrEnum
 from types import UnionType
 from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 
-from pydantic import BaseModel, ConfigDict, Field, ValidationError
+from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from blipsmith.ranges import (
     DURATION_MS_COMPOSITION,
@@ -205,7 +205,10 @@ class Voice(SpecModel):
 
 class Note(SpecModel):
     startBeat: float
-    midiNote: int
+    # Null plays the voice's own fundamental, the same way a painted step does.
+    # A drum track is the case: a kick tuned to 55 Hz wants its own pitch on
+    # every hit, not a MIDI note the sequencer had to invent for it.
+    midiNote: int | None = None
     durationBeats: float = RANGES[("Note", "durationBeats")].default
     velocity: float = RANGES[("Note", "velocity")].default
 
@@ -252,6 +255,21 @@ class SoundSpec(SpecModel):
     voices: list[Voice] = Field(default_factory=list, max_length=MAX_VOICES)
     composition: Composition | None = None
     meta: Meta = Field(default_factory=Meta)
+
+    @model_validator(mode="before")
+    @classmethod
+    def _compositions_default_to_stereo(cls, data: Any) -> Any:
+        """The one default that depends on the rest of the spec: a one-shot is
+        mono, a composition is stereo, because five tracks with pans are a
+        stereo image and folding them down would throw the placement away. An
+        explicit `channels` still wins."""
+        if (
+            isinstance(data, dict)
+            and data.get("composition") is not None
+            and "channels" not in data
+        ):
+            return {**data, "channels": Channels.STEREO}
+        return data
 
 
 # --- Annotation helpers (shared with schema.py) --------------------------------
@@ -482,13 +500,21 @@ def validate_for_render(data: Any) -> tuple[SoundSpec, list[SpecWarning]]:
 
 
 def to_canonical_json(spec: SoundSpec) -> str:
-    """Serialize with defaults materialized and keys sorted.
+    """Serialize with defaults materialized, steps compiled, and keys sorted.
 
     This is the byte-level contract: the core receives exactly this, and golden
-    hashes are taken over renders driven by it.
+    hashes are taken over renders driven by it. Compiling the composition here
+    is what guarantees the core only ever sees one representation of a pattern,
+    whichever surface authored it; the compiler is idempotent, so a caller that
+    already ran it (as `render` does, to collect its warnings) loses nothing.
     """
+    # Imported here rather than at module scope: the compiler is written in
+    # terms of these models, so the dependency only runs one way at import time.
+    from blipsmith.composition import compile_composition
+
+    compiled, _ = compile_composition(spec)
     return json.dumps(
-        spec.model_dump(mode="json"),
+        compiled.model_dump(mode="json"),
         sort_keys=True,
         separators=(",", ":"),
         allow_nan=False,

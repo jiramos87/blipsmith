@@ -11,7 +11,8 @@ std::uint32_t ms_to_frames(double ms, int sampleRate) {
 }
 
 AmpEnvelope::AmpEnvelope(const Adsr& adsr, std::uint32_t totalFrames, int sampleRate)
-    : attackFrames_(ms_to_frames(adsr.attackMs, sampleRate)),
+    : totalFrames_(totalFrames),
+      attackFrames_(ms_to_frames(adsr.attackMs, sampleRate)),
       decayFrames_(ms_to_frames(adsr.decayMs, sampleRate)),
       releaseFrames_(ms_to_frames(adsr.releaseMs, sampleRate)),
       sustainLevel_(adsr.sustainLevel) {
@@ -36,6 +37,22 @@ AmpEnvelope::AmpEnvelope(const Adsr& adsr, std::uint32_t totalFrames, int sample
     levelAtRelease_ = sustained(releaseStart_);
 }
 
+AmpEnvelope AmpEnvelope::gated(const Adsr& adsr, std::uint32_t heldFrames, int sampleRate) {
+    AmpEnvelope envelope;
+    envelope.attackFrames_ = ms_to_frames(adsr.attackMs, sampleRate);
+    envelope.decayFrames_ = ms_to_frames(adsr.decayMs, sampleRate);
+    envelope.sustainLevel_ = adsr.sustainLevel;
+
+    // The key-up is where the note says it is, even if the attack never
+    // finished: a sixteenth note through a 200 ms attack is meant to be a
+    // clipped stab, not a full one.
+    envelope.releaseStart_ = heldFrames;
+    envelope.releaseFrames_ = ms_to_frames(adsr.releaseMs, sampleRate);
+    envelope.totalFrames_ = heldFrames + envelope.releaseFrames_;
+    envelope.levelAtRelease_ = envelope.sustained(heldFrames);
+    return envelope;
+}
+
 double AmpEnvelope::sustained(std::uint32_t frame) const {
     if (frame < attackFrames_) {
         return static_cast<double>(frame) / static_cast<double>(attackFrames_);
@@ -50,6 +67,12 @@ double AmpEnvelope::sustained(std::uint32_t frame) const {
 }
 
 double AmpEnvelope::at(std::uint32_t frame) const {
+    // Past the tail there is nothing left. A one-shot never asks (its buffer
+    // ends with the envelope), but a note's caller may, and squaring a negative
+    // remaining fraction would grow instead of fade.
+    if (frame >= totalFrames_) {
+        return 0.0;
+    }
     if (frame < releaseStart_) {
         return sustained(frame);
     }

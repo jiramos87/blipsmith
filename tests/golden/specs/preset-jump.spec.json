@@ -1,0 +1,21 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 200.0,
+  "meta": {
+    "name": "jump",
+    "tags": ["sfx", "game", "jump", "platformer", "hop"],
+    "description": "The platformer hop: a hollow square swept up two octaves in a tenth of a second."
+  },
+  "voices": [
+    {
+      "waveform": "square",
+      "fundamentalHz": 330.0,
+      "ampEnv": { "attackMs": 1.0, "decayMs": 130.0, "sustainLevel": 0.12, "releaseMs": 55.0 },
+      "modEnv": { "target": "pitch", "amount": 0.5, "attackMs": 0.0, "decayMs": 105.0 },
+      "lofi": { "bitDepth": 8, "decimation": 2 }
+    }
+  ]
+}

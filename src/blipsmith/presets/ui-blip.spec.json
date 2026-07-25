@@ -1,0 +1,19 @@
+{
+  "version": 1,
+  "seed": 0,
+  "sampleRate": 22050,
+  "channels": 1,
+  "durationMs": 80.0,
+  "meta": {
+    "name": "ui-blip",
+    "tags": ["sfx", "ui", "blip", "menu", "tick"],
+    "description": "An interface tick: one short, clean sine blip for menus and cursors."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fundamentalHz": 1200.0,
+      "ampEnv": { "attackMs": 1.0, "decayMs": 30.0, "sustainLevel": 0.0, "releaseMs": 18.0 }
+    }
+  ]
+}

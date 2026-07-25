@@ -145,7 +145,9 @@ RANGES: dict[tuple[str, str], NumericRange] = {
     # Note
     ("Note", "startBeat"): NumericRange(0, 10_000, 0, "beats", "onset, in beats from the start"),
     ("Note", "durationBeats"): NumericRange(0.01, 1000, 1, "beats", "how long the note is held"),
-    ("Note", "midiNote"): NumericRange(0, 127, 60, "", "pitch as a MIDI note number", True),
+    ("Note", "midiNote"): NumericRange(
+        0, 127, 60, "", "optional pitch; null plays the voice's own fundamental", True
+    ),
     ("Note", "velocity"): NumericRange(0, 1, 0.8, "", "note loudness"),
     # Step
     ("Step", "index"): NumericRange(0, 4096, 0, "", "position on the track's step grid", True),
