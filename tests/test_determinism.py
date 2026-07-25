@@ -6,8 +6,6 @@ same-machine half; B13's CI matrix covers the cross-platform half.
 
 from __future__ import annotations
 
-import hashlib
-import json
 import shutil
 import struct
 import subprocess
@@ -21,7 +19,6 @@ import blipsmith
 from blipsmith.spec import to_canonical_json, validate_for_render
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
-GOLDEN = REPO_ROOT / "tests" / "golden"
 CHECK_NO_LIBM = REPO_ROOT / "scripts" / "check_no_libm.py"
 
 
@@ -108,53 +105,9 @@ def test_canonical_json_drives_the_bytes_not_key_order() -> None:
     assert forwards == backwards
 
 
-# --- Golden corpus ------------------------------------------------------------
-
-
-def golden_cases() -> list[str]:
-    return sorted(path.name for path in (GOLDEN / "specs").glob("*.spec.json"))
-
-
-def test_golden_corpus_is_not_empty() -> None:
-    """Guards against the parametrized checks below silently covering nothing."""
-    assert len(golden_cases()) >= 7, "expected at least one golden per waveform"
-
-
-@pytest.mark.parametrize("name", golden_cases())
-def test_golden_render_matches_its_recorded_hash(name: str) -> None:
-    expected = json.loads((GOLDEN / "hashes.json").read_text())
-    payload = json.loads((GOLDEN / "specs" / name).read_text())
-
-    wav = render_wav(payload)
-
-    assert name in expected, f"{name} has no recorded hash"
-    assert hashlib.sha256(wav).hexdigest() == expected[name], (
-        f"{name} no longer renders the bytes it was recorded with. If the change "
-        "was intended, re-record the corpus and say so in the commit."
-    )
-
-
-@pytest.mark.parametrize("name", golden_cases())
-def test_golden_spec_is_authored_in_range(name: str) -> None:
-    """A golden that clamps would be recording a warning, not a sound."""
-    _, warnings = validate_for_render(json.loads((GOLDEN / "specs" / name).read_text()))
-    assert warnings == []
-
-
-@pytest.mark.parametrize("name", golden_cases())
-def test_golden_render_does_not_clip(name: str) -> None:
-    wav = render_wav(json.loads((GOLDEN / "specs" / name).read_text()))
-    count = struct.unpack_from("<I", wav, 40)[0] // 2
-    raw = struct.unpack_from(f"<{count}h", wav, 44)
-
-    assert any(value != 0 for value in raw), "a golden should not be silence"
-    assert min(raw) > -32768, "hard-negative full scale suggests wrapping"
-
-
-def test_every_recorded_hash_still_has_a_spec() -> None:
-    """A hash left behind after its spec was deleted would never be checked."""
-    recorded = set(json.loads((GOLDEN / "hashes.json").read_text()))
-    assert recorded == set(golden_cases())
+# The golden corpus itself moved to `tests/test_golden.py` when B13 froze it:
+# hash equality, non-clipping, peak-at-target and the coverage audit are one
+# gate now, so the corpus has a single home rather than a check per item.
 
 
 # --- The no-libm gate can actually fail ---------------------------------------

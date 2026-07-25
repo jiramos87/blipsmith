@@ -11,6 +11,7 @@ build-backend = "scikit_build_core.build"
 name = "blipsmith"
 version = "0.1.0"
 description = "An agent-playable lo-fi synthesizer: deterministic C++ DSP core, MCP and CLI surfaces."
+readme = "README.md"
 requires-python = ">=3.11"
 license = { text = "MIT" }
 authors = [{ name = "Javier Ramos", email = "jiramos87@gmail.com" }]
@@ -43,6 +44,22 @@ build-dir = "build/{wheel_tag}"
 wheel.packages = ["src/blipsmith"]
 cmake.version = ">=3.20"
 cmake.build-type = "Release"
+
+[tool.cibuildwheel]
+# CI builds wheels for the two platforms the determinism gate covers, and no
+# others: a wheel this project has never proven bit-identical on is a wheel it
+# should not be handing out.
+build = "cp311-* cp312-* cp313-*"
+skip = "*-musllinux_* *_i686 pp*"
+# The one failure a wheel can have that a source build cannot: shipping without
+# its compiled core. `import blipsmith` fails fast by design, so this catches it.
+test-command = "python -c \"import blipsmith; print(blipsmith._core.ping())\""
+
+[tool.cibuildwheel.macos]
+archs = ["arm64"]
+
+[tool.cibuildwheel.linux]
+archs = ["x86_64"]
 
 [tool.ruff]
 line-length = 100

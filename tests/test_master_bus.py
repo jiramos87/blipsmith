@@ -8,10 +8,8 @@ what a caller *cannot* do to it.
 
 from __future__ import annotations
 
-import json
 import math
 import struct
-from pathlib import Path
 from typing import Any
 
 import pytest
@@ -21,8 +19,6 @@ from blipsmith.ranges import LIMITER_TARGET_DBFS
 from blipsmith.result import ErrorCode, SpecError, WarningCode
 from blipsmith.schema import get_schema
 from blipsmith.spec import Limiter, SoundSpec, to_canonical_json, validate_for_render
-
-GOLDEN = Path(__file__).resolve().parent / "golden"
 
 FLAT_ENV: dict[str, float] = {
     "attackMs": 0.0,
@@ -380,25 +376,6 @@ def test_the_default_spec_carries_the_pinned_target() -> None:
     assert SoundSpec().master.limiter.targetDbfs == LIMITER_TARGET_DBFS
 
 
-# --- The whole corpus, now that the bus sits in front of it -------------------
-
-
-def golden_cases() -> list[str]:
-    return sorted(path.name for path in (GOLDEN / "specs").glob("*.spec.json"))
-
-
-@pytest.mark.parametrize("name", golden_cases())
-def test_every_golden_leaves_at_the_target_without_clipping(name: str) -> None:
-    """The quality bar for the corpus: nothing clips, and every render lands on
-    the normalization target."""
-    payload = json.loads((GOLDEN / "specs" / name).read_text())
-    samples = raw_samples(payload)
-    target = payload.get("master", {}).get("limiter", {}).get("targetDbfs", TARGET_DBFS)
-
-    assert min(samples) > -32768, f"{name} wrapped past negative full scale"
-    assert max(samples) <= 32767
-    assert peak_dbfs(samples) == pytest.approx(target, abs=PEAK_TOLERANCE_DB)
-
-
-def test_the_corpus_covers_a_deliberately_hot_multi_voice_spec() -> None:
-    assert "bus-hot-chord.spec.json" in golden_cases()
+# The corpus-wide assertions this item added (nothing clips, everything lands on
+# the target) moved to `tests/test_golden.py` when B13 froze the corpus, along
+# with the audit that keeps a deliberately hot multi-voice render in it.

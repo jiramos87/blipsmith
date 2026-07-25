@@ -26,13 +26,18 @@ from typing import Any
 import pytest
 
 from blipsmith.cli import build_parser, main
+from blipsmith.presets import list_presets, load_preset
 from blipsmith.render import render
 
 REPO_ROOT = Path(__file__).resolve().parents[1]
 GOLDEN = REPO_ROOT / "tests" / "golden"
 VERIFY = REPO_ROOT / "scripts" / "verify.sh"
 
-COMMANDS = ("render", "batch", "vary", "explain", "verify-golden")
+COMMANDS = ("render", "batch", "vary", "explain", "presets", "verify-golden")
+
+# `verify-golden` defaults its corpus directory and `presets` takes nothing, so
+# neither has a positional to supply when the parser is exercised generically.
+COMMANDS_WITHOUT_A_POSITIONAL = ("presets", "verify-golden")
 
 
 # --- Fixtures and helpers -----------------------------------------------------
@@ -375,6 +380,88 @@ def test_explain_is_deterministic(spec_file: Path, capsys: pytest.CaptureFixture
     assert capsys.readouterr().out == first
 
 
+# --- presets ------------------------------------------------------------------
+#
+# Added in B13, on the note B11 left: the library was reachable from Python and
+# from MCP, but a human at a terminal had to know the path inside the installed
+# package to start from one. The README documents this surface, so it ships.
+
+
+def test_presets_lists_the_whole_catalogue(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["presets"]) == 0
+
+    printed = capsys.readouterr().out
+    for preset in list_presets():
+        assert preset.name in printed
+        assert preset.description in printed
+
+
+def test_presets_shows_both_families(capsys: pytest.CaptureFixture[str]) -> None:
+    """A catalogue that lost its drum kit should not read as complete."""
+    main(["presets"])
+    printed = capsys.readouterr().out
+
+    assert "sfx" in printed
+    assert "drum" in printed
+
+
+def test_render_from_a_preset_writes_the_same_bytes_as_the_library(
+    tmp_path: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """`--preset laser` has to be the shipped laser, not a CLI-local copy of it."""
+    out = tmp_path / "out"
+    assert main(["render", "--preset", "laser", "--out-dir", str(out)]) == 0
+    capsys.readouterr()
+
+    direct = render(load_preset("laser").model_dump(mode="json"), out_dir=tmp_path / "direct")
+
+    assert direct.wavPath is not None
+    assert (out / "laser.wav").read_bytes() == Path(direct.wavPath).read_bytes()
+
+
+def test_a_preset_render_re_renders_from_its_own_sidecar(tmp_path: Path) -> None:
+    out = tmp_path / "out"
+    main(["render", "--preset", "kick", "--out-dir", str(out)])
+
+    again = tmp_path / "again"
+    assert main(["render", str(out / "kick.spec.json"), "--out-dir", str(again)]) == 0
+    assert (out / "kick.wav").read_bytes() == (again / "kick.wav").read_bytes()
+
+
+def test_a_preset_render_still_honours_the_seed_override(tmp_path: Path) -> None:
+    seeded = tmp_path / "seeded"
+    plain = tmp_path / "plain"
+    main(["render", "--preset", "snare", "--out-dir", str(plain)])
+    main(["render", "--preset", "snare", "--seed", "99", "--out-dir", str(seeded)])
+
+    # The snare is noise, so a different seed has to reach the audio.
+    assert (plain / "snare.wav").read_bytes() != (seeded / "snare.wav").read_bytes()
+
+
+def test_an_unknown_preset_names_the_valid_ones(capsys: pytest.CaptureFixture[str]) -> None:
+    assert main(["render", "--preset", "trombone"]) == 1
+
+    printed = capsys.readouterr().err
+    assert "trombone" in printed
+    assert "laser" in printed
+
+
+def test_a_preset_and_a_spec_file_together_are_refused(
+    spec_file: Path, capsys: pytest.CaptureFixture[str]
+) -> None:
+    """Two sources of truth for one render is the ambiguity worth refusing:
+    silently picking one would render something the caller did not ask for."""
+    assert main(["render", str(spec_file), "--preset", "laser"]) == 1
+    assert "--preset" in capsys.readouterr().err
+
+
+def test_render_with_neither_a_spec_nor_a_preset_is_refused(
+    capsys: pytest.CaptureFixture[str],
+) -> None:
+    assert main(["render"]) == 1
+    assert "--preset" in capsys.readouterr().err
+
+
 # --- verify-golden ------------------------------------------------------------
 
 
@@ -453,7 +540,8 @@ def test_help_exits_zero_and_lists_every_command(capsys: pytest.CaptureFixture[s
 
 def test_every_command_is_wired_to_a_handler() -> None:
     for command in COMMANDS:
-        args = build_parser().parse_args([command, *(["x"] if command != "verify-golden" else [])])
+        positional = [] if command in COMMANDS_WITHOUT_A_POSITIONAL else ["x"]
+        args = build_parser().parse_args([command, *positional])
         assert callable(args.handler)
 
 

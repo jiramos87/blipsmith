@@ -29,6 +29,7 @@ from typing import Any
 
 from blipsmith import _core
 from blipsmith.explain import explain_spec
+from blipsmith.presets import list_presets, load_preset
 from blipsmith.ranges import RANGES
 from blipsmith.render import render
 from blipsmith.result import RenderResult, RenderStatus, SpecError
@@ -118,7 +119,15 @@ def _reason(result: RenderResult) -> str:
 
 
 def cmd_render(args: argparse.Namespace) -> int:
-    data = _read_json(args.spec)
+    if (args.spec is None) == (args.preset is None):
+        raise CliError("pass a spec file or --preset, not both and not neither")
+
+    if args.preset is not None:
+        # Straight through the same registry the MCP server uses, then treated as
+        # any other spec: a preset is a starting point, not a second code path.
+        data: Any = load_preset(args.preset).model_dump(mode="json")
+    else:
+        data = _read_json(args.spec)
     if args.seed is not None and isinstance(data, dict):
         data["seed"] = args.seed
 
@@ -126,6 +135,21 @@ def cmd_render(args: argparse.Namespace) -> int:
     if _failed(result):
         raise CliError(_reason(result))
     _print_result(result)
+    return EXIT_OK
+
+
+def cmd_presets(args: argparse.Namespace) -> int:
+    """The catalogue, one preset per line. Without this a human at a terminal has
+    to know the file path inside the installed package to start from a preset."""
+    presets = list_presets()
+    tags = {preset.name: ",".join(preset.tags) for preset in presets}
+    name_width = max(len(preset.name) for preset in presets)
+    tag_width = max(len(value) for value in tags.values())
+    for preset in presets:
+        print(
+            f"{preset.name:<{name_width}}  {tags[preset.name]:<{tag_width}}  {preset.description}"
+        )
+    print(f"{len(presets)} presets. Render one with: blipsmith render --preset {presets[0].name}")
     return EXIT_OK
 
 
@@ -271,7 +295,10 @@ def build_parser() -> argparse.ArgumentParser:
     commands = parser.add_subparsers(dest="command", required=True, metavar="command")
 
     render_cmd = commands.add_parser("render", help="render one spec file to WAV plus a sidecar")
-    render_cmd.add_argument("spec", type=Path, help="a .spec.json file")
+    render_cmd.add_argument("spec", type=Path, nargs="?", help="a .spec.json file")
+    render_cmd.add_argument(
+        "--preset", default=None, help="render a shipped preset instead of a file"
+    )
     render_cmd.add_argument("--seed", type=int, default=None, help="override the spec's seed")
     render_cmd.add_argument("--name", default=None, help="override the output file stem")
     _add_output_flags(render_cmd)
@@ -290,6 +317,9 @@ def build_parser() -> argparse.ArgumentParser:
     vary_cmd.add_argument("--name", default=None, help="override the stem the variations share")
     _add_output_flags(vary_cmd)
     vary_cmd.set_defaults(handler=cmd_vary)
+
+    presets_cmd = commands.add_parser("presets", help="list the shipped presets")
+    presets_cmd.set_defaults(handler=cmd_presets)
 
     explain_cmd = commands.add_parser("explain", help="describe a spec in words, without rendering")
     explain_cmd.add_argument("spec", type=Path, help="a .spec.json file")

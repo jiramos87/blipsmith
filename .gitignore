@@ -29,5 +29,9 @@ CMakeFiles/
 
 # Rendered audio scratch (specs are the source of truth, not WAVs)
 /out/
+# The default output directory from the pinned output policy. The WAV rule below
+# already covers the audio; without this line a first default render leaves
+# untracked sidecars sitting in the repo.
+/blipsmith-out/
 *.wav
 !tests/**/golden/*.wav

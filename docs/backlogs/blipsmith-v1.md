@@ -48,7 +48,7 @@ The shared names later items depend on, fixed here so items cannot drift apart.
 | B10 | Preset library: game SFX and lo-fi drum kit | B05, B06, B07 | M | med | done |
 | B11 | CLI: render, batch, vary, explain, verify-golden | B08, B09 | L | high | done |
 | B12 | MCP server: session verbs and stateless contract | B08, B09, B10 | L | high | done |
-| B13 | Golden corpus, two-platform CI, wheels, README | B11, B12 | L | high | pending |
+| B13 | Golden corpus, two-platform CI, wheels, README | B11, B12 | L | high | done |
 
 Statuses: pending -> in-progress -> done. The implementer updates its own row; it never edits an item body. The ledger order is a valid topological sort of the depends-on graph.
 
@@ -232,6 +232,8 @@ Note (2026-07-24, from B04): multi-voice specs clip today, and this item is the 
 
 Note (2026-07-24, from B08): kissfft was NOT vendored, and `core/vendor/` does not exist. kissfft builds its twiddle factors with `cos`/`sin` from the host libm (`kf_cexp`), which the pinned determinism invariant bars and `scripts/check_no_libm.py` rejects on undefined symbols, so vendoring it as written would have failed the gate this repo runs on every build. The FFT is instead ~40 lines of radix-2 butterflies in `core/src/features.cpp` reading twiddles from the B04 sine table; at the 1024-point size used, every twiddle is an exact table entry rather than an interpolation, so this is more accurate than the libm version as well as deterministic. No third-party license is carried as a result. Same reasoning forced a deterministic `linear_to_db` (dBFS needs `log10`, equally barred): `tables.cpp`, exact exponent split plus a fixed-length series.
 
+Note (2026-07-25, from B13): `explain_spec` picks its article by rule and writes "a 8-bit crush". Visible in the README's MCP transcript, which quotes the real output. Cosmetic, in text the driving agent reads, and a one-line fix (choose the article from the spoken form of the number, not the digit) that belongs to whoever next touches `explain.py`.
+
 ### B09 - Composition engine: tracks, notes, steps, tempo, swing
 
 - **Depends on:** B07
@@ -364,6 +366,24 @@ Note (2026-07-25, for B13): the dependency tree stopped being strictly MIT/BSD. 
   - Given the README, When followed verbatim by a new user, Then both loops complete: the MCP session example and the CLI render example, producing the documented outputs.
   - Given the perf test on dev hardware, When run, Then the one-shot renders under 50 ms and the composition under 2 s.
 - **Needs human:** create the public GitHub repository, push, and enable Actions (no remote exists today). Confirm the MIT license holder line. Spot-listen sign-off on the frozen golden corpus (carried from B10).
+
+Note (2026-07-25): the corpus needed nothing added. All 35 entries already covered every stage the Quality bar lists, so the audit was written and passed on the first run rather than driving new goldens. What changed is how coverage is asserted: `STAGE_PROBES` in `tests/test_golden.py` is a map from stage name to a predicate over the *parsed spec*, not to a filename. A filename list passes forever once written; a predicate fails the day a golden stops exercising the stage it was recorded for, which is the failure mode a frozen corpus actually has.
+
+Note (2026-07-25): the corpus-wide assertions moved rather than being duplicated. `test_determinism.py` (hash equality, non-clipping, in-range authoring, orphaned hashes) and `test_master_bus.py` (peak at target across every golden) each owned a slice of the corpus from the item that added it; all of it now lives in `tests/test_golden.py`, with a pointer left behind in both files. Nothing was weakened: B04's and B07's acceptance statements are still asserted, over a corpus that is now 35 specs instead of 9 or 20.
+
+Note (2026-07-25): the cross-platform gate needed one file the item did not list, `scripts/golden_hashes.py`. `verify-golden` answers "did the bytes move?" for a human and prints prose; the join job needs "what are the bytes?" as something diffable. The manifest is sorted-key JSON, so the two platforms are compared with a plain `diff -u` and the failure names the exact specs that diverged. `tests/test_golden.py` asserts the manifest covers the whole corpus and agrees with `hashes.json`, so the file CI compares cannot quietly become a different measurement than the one the local gate makes.
+
+Note (2026-07-25): `tests/test_readme.py` also ships, for the acceptance clause "followed verbatim by a new user". The CLI loop's spec is lifted out of the README's heredoc, written to an empty directory with no environment set, rendered, and its printed output compared to the block the README promises; the sidecar is then re-rendered and the bytes compared. The MCP transcript cannot be executed, so what is asserted there is every tool name it uses against the server's published list, plus the quoted tool, preset, and corpus counts. Prose rots silently, and this is the item that publishes it.
+
+Note (2026-07-25, human decision): B11's note about presets having no CLI surface was closed here rather than deferred, on the human's call, because the README freezes the documented surface. `blipsmith presets` lists the catalogue and `blipsmith render --preset {name}` renders one; the spec positional became optional and exactly one of the two is required. Both go through the same `blipsmith.presets` registry the MCP server uses, so there is still one preset library and no CLI-local copy of it.
+
+Note (2026-07-25): CI runs the gate steps individually rather than calling `scripts/verify.sh`, because each step needs to be its own annotated line in the run log and a fresh checkout is already clean. `tests/test_golden.py` asserts every local gate step appears in the workflow, so the two cannot drift apart. Wheels are built with `uvx cibuildwheel` (config in `[tool.cibuildwheel]`, per-wheel test command `import blipsmith`), pinned to cp311-cp313 on exactly the two platforms the determinism gate covers: handing out a wheel for a platform this project has never proven bit-identical would be handing out the one thing it promises not to.
+
+Note (2026-07-25): `estimatedFundamentalHz` measures the whole file at once, so on a voice with a pitch sweep it lands somewhere inside the sweep rather than on the fundamental that was set (the README's heavy-laser reads 1818 Hz for a voice set to 220 Hz). Correct for what it computes and useless as a check on a swept voice. Documented in the README as a caveat rather than changed: B10 already established that a sweep is read by measuring head and tail separately. A windowed variant would be a new feature key, so it goes back through `/sequential-backlog` if v1 wants one.
+
+Note (2026-07-25): two `.gitignore` and packaging leftovers closed here since this item owns the public repo shape. `/blipsmith-out/` is ignored (B10's note: the WAV rule covered the audio but a first default render left untracked sidecars in the repo root), and `readme = "README.md"` was added to `pyproject.toml` (B01's note deferred it to this item, and it is a hard build error until the file exists).
+
+Note (2026-07-25, still owed): the two-platform hash gate has never run. It cannot until the repo exists and Actions is enabled, which is the standing needs-human above. Everything reachable locally was verified instead: the workflow parses, the manifest script agrees with `hashes.json` on this machine, `cibuildwheel --print-build-identifiers` resolves the pinned config, and a real wheel built from this tree installs into a clean venv, ships all 13 presets, and re-renders `preset-laser` to its recorded hash. The human ear pass on the frozen corpus is also still owed, carried from B10.
 
 ## Appendix A - Ground-truth verdicts
 

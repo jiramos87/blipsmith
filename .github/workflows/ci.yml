@@ -1,0 +1,134 @@
+# The gate this project exists to pass.
+#
+# `gate` is `scripts/verify.sh` run on both platforms the determinism invariant
+# names, plus one extra step: each platform emits a manifest of the golden corpus
+# it just rendered. `determinism` then diffs the two manifests. That diff is the
+# whole claim of this repo made falsifiable: same SoundSpec and seed, identical
+# bytes on Linux x86_64 and macOS arm64. Nothing else here can prove it, because
+# no single machine can.
+#
+# `wheels` builds installable artifacts for both platforms once the gate is green.
+name: ci
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+permissions:
+  contents: read
+
+env:
+  # Shared runners have no performance guarantee. `tests/test_perf.py` reads this
+  # and multiplies its budgets; the targets are there to catch an order-of-
+  # magnitude regression, not to police a noisy neighbour.
+  BLIPSMITH_PERF_MULTIPLIER: "5"
+
+jobs:
+  gate:
+    name: gate (${{ matrix.os }})
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        # ubuntu-latest is x86_64 and macos-latest is arm64: the two the
+        # acceptance names. Dropping either leaves the invariant unproven.
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+          enable-cache: true
+
+      - name: Build the native core
+        run: uv sync
+
+      - name: Lint (ruff)
+        run: |
+          uv run ruff check .
+          uv run ruff format --check .
+
+      - name: Typecheck (mypy)
+        run: uv run mypy
+
+      - name: Tests (pytest)
+        run: uv run pytest
+
+      - name: Determinism, no libm transcendentals
+        run: uv run python scripts/check_no_libm.py
+
+      - name: CLI boot
+        run: uv run blipsmith --help
+
+      - name: MCP server boot
+        run: uv run python -m blipsmith.mcp_server --boot-check
+
+      - name: Render the golden corpus and record its hashes
+        run: uv run python scripts/golden_hashes.py > golden-${{ matrix.os }}.json
+
+      - name: Upload this platform's hashes
+        uses: actions/upload-artifact@v4
+        with:
+          name: golden-hashes-${{ matrix.os }}
+          path: golden-${{ matrix.os }}.json
+          if-no-files-found: error
+
+  determinism:
+    name: cross-platform hashes
+    needs: gate
+    runs-on: ubuntu-latest
+    steps:
+      - name: Collect both platforms' hashes
+        uses: actions/download-artifact@v4
+        with:
+          pattern: golden-hashes-*
+          merge-multiple: true
+
+      - name: Compare Linux x86_64 against macOS arm64
+        run: |
+          set -euo pipefail
+          # Both manifests are sorted-key JSON, one spec per line, so a plain
+          # diff names the exact specs that diverged rather than just failing.
+          if diff -u golden-ubuntu-latest.json golden-macos-latest.json; then
+            echo "Bit-identical across Linux x86_64 and macOS arm64."
+          else
+            echo "::error::the golden corpus rendered different bytes on the two platforms"
+            exit 1
+          fi
+
+  wheels:
+    name: wheels (${{ matrix.os }})
+    needs: gate
+    runs-on: ${{ matrix.os }}
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest]
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install uv
+        uses: astral-sh/setup-uv@v5
+        with:
+          python-version: "3.13"
+
+      # Configuration lives in pyproject under [tool.cibuildwheel], including the
+      # per-wheel test command: a wheel that imports without its native core is
+      # exactly the failure this build is meant to catch.
+      - name: Build wheels
+        run: uvx cibuildwheel --output-dir wheelhouse
+
+      - name: Upload wheels
+        uses: actions/upload-artifact@v4
+        with:
+          name: wheels-${{ matrix.os }}
+          path: wheelhouse/*.whl
+          if-no-files-found: error
