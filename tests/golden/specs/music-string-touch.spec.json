@@ -1,0 +1,118 @@
+{
+  "version": 2,
+  "seed": 54,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-string-touch",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Strings on touch: a plucked and a struck string whose brightness follows each note's velocity, from a soft finger to a hard pick."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "string": {
+        "excitation": "pluck",
+        "brightness": 0.45,
+        "decayMs": 2500,
+        "damping": 0.4
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 200
+      },
+      "track": 0,
+      "pan": -0.25,
+      "touch": {
+        "pivot": 0.6,
+        "cutoffOctaves": 3,
+        "attackOctaves": 1
+      }
+    },
+    {
+      "waveform": "sine",
+      "string": {
+        "excitation": "strike",
+        "brightness": 0.4,
+        "decayMs": 3000,
+        "damping": 0.5,
+        "position": 0.18
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 200
+      },
+      "track": 1,
+      "pan": 0.25,
+      "touch": {
+        "pivot": 0.5,
+        "cutoffOctaves": 4
+      }
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "pluck",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 62,
+            "durationBeats": 0.5,
+            "velocity": 0.2
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 62,
+            "durationBeats": 0.5,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 62,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 62,
+            "durationBeats": 0.5,
+            "velocity": 1.0
+          }
+        ]
+      },
+      {
+        "name": "strike",
+        "notes": [
+          {
+            "startBeat": 2,
+            "midiNote": 67,
+            "durationBeats": 0.5,
+            "velocity": 0.25
+          },
+          {
+            "startBeat": 2.5,
+            "midiNote": 67,
+            "durationBeats": 0.5,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 3,
+            "midiNote": 67,
+            "durationBeats": 0.5,
+            "velocity": 1.0
+          }
+        ]
+      }
+    ]
+  }
+}

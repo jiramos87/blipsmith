@@ -456,6 +456,32 @@ class Session:
 
         return self._apply(mutate)
 
+    def set_string(
+        self,
+        excitation: str | None = None,
+        position: float | None = None,
+        brightness: float | None = None,
+        decayMs: float | None = None,
+        damping: float | None = None,
+        body: float | None = None,
+        bodyHz: float | None = None,
+        clear: bool = False,
+    ) -> list[SpecWarning]:
+        return self._expression_block(
+            "string",
+            "a string",
+            clear,
+            {
+                "excitation": excitation,
+                "position": position,
+                "brightness": brightness,
+                "decayMs": decayMs,
+                "damping": damping,
+                "body": body,
+                "bodyHz": bodyHz,
+            },
+        )
+
     def set_vibrato(
         self,
         delayMs: float | None = None,

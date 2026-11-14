@@ -1,0 +1,85 @@
+{
+  "version": 2,
+  "seed": 53,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-string-bass",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "A plucked bass string low in the range, sliding between held notes and blooming on the long one."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fundamentalMidi": 28,
+      "string": {
+        "excitation": "pluck",
+        "position": 0.2,
+        "brightness": 0.35,
+        "decayMs": 1500,
+        "damping": 0.75
+      },
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 90
+      },
+      "track": 0,
+      "glide": {
+        "timeMs": 70,
+        "mode": "legato"
+      },
+      "vibrato": {
+        "delayMs": 400,
+        "fadeMs": 300,
+        "rateHz": 5,
+        "depthCents": 15
+      }
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "bass",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 28,
+            "durationBeats": 0.5,
+            "velocity": 0.9
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 28,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 31,
+            "durationBeats": 1.0,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.75,
+            "midiNote": 33,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 26,
+            "durationBeats": 1.75,
+            "velocity": 0.95
+          }
+        ]
+      }
+    ]
+  }
+}

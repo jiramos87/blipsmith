@@ -9,7 +9,7 @@ drive a physical synth, one typed setter at a time, and a human drives the same
 engine from a terminal. Both paths run the same code and produce the same bytes.
 
 **Same spec, same seed, identical WAV. Every time, on every supported platform.**
-That is the contract the whole design serves, and CI proves it by rendering 48
+That is the contract the whole design serves, and CI proves it by rendering 52
 golden specs on Linux x86_64 and macOS arm64 and comparing SHA-256 sets.
 
 ## Install
@@ -40,7 +40,7 @@ claude mcp add blipsmith -- uv run --project /path/to/blipsmith blipsmith-mcp
 ```
 
 Then ask for a sound. The agent holds one session, shaped like a synth front
-panel: 37 tools, grouped so that one call sets one block of related parameters.
+panel: 38 tools, grouped so that one call sets one block of related parameters.
 
 > **You:** Make me a laser shot, but heavier and dirtier than the stock one.
 
@@ -247,6 +247,30 @@ unchanged.
 The MCP verbs are `set_fm4` and `set_operator`. The behaviour is specified in
 `docs/prd/blipsmith-fm4.md`.
 
+### Plucked and struck strings
+
+A music-mode voice can trade its oscillator for a string: a Karplus-Strong loop
+that is set ringing once per note and then loses its highs and dies away on its
+own, the sound of a guitar, a harp, a plucked bass, a dulcimer or a piano
+string. A voice without it plays exactly as before.
+
+- **Excitation.** `pluck` fills the string with a burst of the voice's seeded
+  noise; `strike` hits it with a hammer pulse. `position` (0.02 to 0.5) is where
+  along the string: near the end is thin and bright, the middle hollow.
+- **Tone.** `brightness` (0 to 1) is how hard and bright the pluck or hammer is,
+  `damping` (0 to 1) how much faster the high partials die than the fundamental,
+  `decayMs` how long the string takes to fall 60 dB. `body` mixes in a resonance
+  at `bodyHz`.
+- **Stable by construction.** The loop is a centred Lagrange read, a symmetric
+  loss filter and a gain below 1, each with a gain of at most 1, so every legal
+  setting dies away. The pitch is read every frame, so glide, vibrato and the
+  pitch modulators move the string.
+- **Touch** reaches the brightness: `cutoffOctaves` moves it in octaves, so a
+  harder note is a harder pick. The amp envelope's release mutes the string.
+
+The MCP verb is `set_string`. The behaviour is specified in
+`docs/prd/blipsmith-strings.md`.
+
 ## Determinism, and how it is enforced
 
 The audio path uses fixed-point phase accumulators and baked wavetables, with no
@@ -263,7 +287,7 @@ That invariant is enforced, not just intended:
   `sin()` and asserts the check rejects it, so the gate is known to be able to
   fail.
 - `-ffp-contract=off`, no fast-math, C++17, pinned in `CMakeLists.txt`.
-- 48 golden specs cover every waveform, every processing stage and every preset
+- 52 golden specs cover every waveform, every processing stage and every preset
   archetype. Each one asserts its recorded hash, non-clipping output, and a peak
   at the normalization target.
 - CI renders that corpus on Linux x86_64 and macOS arm64 and diffs the hash

@@ -1,0 +1,125 @@
+{
+  "version": 2,
+  "seed": 51,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-string-pluck",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Plucked strings: a harp rolling a chord, bright and long, and a nylon guitar plucked near the bridge through a body resonance."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "string": {
+        "excitation": "pluck",
+        "position": 0.3,
+        "brightness": 0.75,
+        "decayMs": 4000,
+        "damping": 0.2
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 400
+      },
+      "track": 0,
+      "pan": -0.3
+    },
+    {
+      "waveform": "sine",
+      "string": {
+        "excitation": "pluck",
+        "position": 0.12,
+        "brightness": 0.5,
+        "decayMs": 2500,
+        "damping": 0.6,
+        "body": 0.4,
+        "bodyHz": 180
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 150
+      },
+      "track": 1,
+      "pan": 0.3,
+      "mixDb": -2
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "harp",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 57,
+            "durationBeats": 3,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0.25,
+            "midiNote": 60,
+            "durationBeats": 2.75,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 64,
+            "durationBeats": 2.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0.75,
+            "midiNote": 69,
+            "durationBeats": 2.25,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "name": "guitar",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 45,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 52,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 57,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 52,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 50,
+            "durationBeats": 1.5,
+            "velocity": 0.8
+          }
+        ]
+      }
+    ]
+  }
+}

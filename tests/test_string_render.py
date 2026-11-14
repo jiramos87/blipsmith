@@ -71,7 +71,7 @@ def centroid(voice: dict[str, Any], velocity: float = 0.8, midi: int = 57) -> fl
 
 
 def midi_hz(midi: int) -> float:
-    return 440.0 * 2.0 ** ((midi - 69) / 12)
+    return float(440.0 * 2.0 ** ((midi - 69) / 12))
 
 
 # --- Pitch --------------------------------------------------------------------------

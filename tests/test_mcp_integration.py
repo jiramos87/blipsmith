@@ -72,6 +72,8 @@ SESSION_TOOLS = (
     # docs/prd/blipsmith-fm4.md
     "set_fm4",
     "set_operator",
+    # docs/prd/blipsmith-strings.md
+    "set_string",
 )
 STATELESS_TOOLS = ("render_spec", "get_schema", "list_presets", "load_preset", "explain_spec")
 PINNED_TOOLS = (*SESSION_TOOLS, *STATELESS_TOOLS)
@@ -684,6 +686,8 @@ def test_every_pinned_tool_is_exercised(tmp_path: Path) -> None:
         await mcp.call("new_voice", waveform="sine")
         await mcp.call("set_fm4", algorithm=4, feedback=0.2)
         await mcp.call("set_operator", operator=3, ratio=14.0, level=0.1, decayMs=300.0)
+        await mcp.call("new_voice", waveform="sine")
+        await mcp.call("set_string", excitation="strike", brightness=0.5, body=0.3)
         await mcp.call("explain_session")
         await mcp.call("render", outDir=str(tmp_path))
         exported = await mcp.call("export_spec")

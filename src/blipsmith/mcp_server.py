@@ -284,6 +284,33 @@ def build_server(session: Session | None = None) -> FastMCP:
         )
 
     @server.tool()
+    def set_string(
+        excitation: str | None = None,
+        position: float | None = None,
+        brightness: float | None = None,
+        decayMs: float | None = None,
+        damping: float | None = None,
+        body: float | None = None,
+        bodyHz: float | None = None,
+        clear: bool = False,
+    ) -> dict[str, Any]:
+        """Music mode: a plucked or struck string replaces this voice's oscillator
+        (the waveform must be sine, and the voice cannot also have fm or fm4).
+        `excitation` pluck (a guitar, a harp, a plucked bass) or strike (a
+        hammer: a dulcimer, a piano string). `position` 0.02 to 0.5 is where
+        along the string (near the end is thin and bright, the middle hollow).
+        `brightness` 0 to 1 is how hard and bright the pluck or hammer is; touch's
+        cutoffOctaves moves it with velocity. `decayMs` is how long it rings,
+        `damping` 0 to 1 how much faster its highs die (0 metallic, 1 felted).
+        `body` 0 to 1 mixes a resonance at `bodyHz`. Keep the amp envelope's
+        attack 0 and sustain 1; its release mutes the string. `clear` removes it."""
+        return _guarded(
+            lambda: state.set_string(
+                excitation, position, brightness, decayMs, damping, body, bodyHz, clear
+            )
+        )
+
+    @server.tool()
     def set_vibrato(
         delayMs: float | None = None,
         fadeMs: float | None = None,

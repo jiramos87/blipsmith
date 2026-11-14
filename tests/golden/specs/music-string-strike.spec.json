@@ -1,0 +1,124 @@
+{
+  "version": 2,
+  "seed": 52,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-string-strike",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Struck strings: a hammered dulcimer, metallic and quick, and a felted piano string with a long ring and a low body."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "string": {
+        "excitation": "strike",
+        "position": 0.1,
+        "brightness": 0.85,
+        "decayMs": 1800,
+        "damping": 0.1
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 300
+      },
+      "track": 0,
+      "pan": -0.2
+    },
+    {
+      "waveform": "sine",
+      "string": {
+        "excitation": "strike",
+        "position": 0.14,
+        "brightness": 0.45,
+        "decayMs": 6000,
+        "damping": 0.7,
+        "body": 0.25,
+        "bodyHz": 120
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 250
+      },
+      "track": 1,
+      "pan": 0.2
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "dulcimer",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 74,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 76,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 79,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 81,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 79,
+            "durationBeats": 1,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "name": "piano",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 48,
+            "durationBeats": 2,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 55,
+            "durationBeats": 2,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 64,
+            "durationBeats": 2,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 43,
+            "durationBeats": 1.5,
+            "velocity": 0.8
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -12,8 +12,10 @@ from typing import Any
 
 import pytest
 
+from blipsmith.explain import explain_spec
 from blipsmith.result import SpecError
 from blipsmith.schema import get_schema
+from blipsmith.session import Session
 from blipsmith.spec import parse_spec, to_canonical_json, validate_spec
 
 
@@ -115,3 +117,59 @@ def test_schema_publishes_the_string_block() -> None:
     string = schema["models"]["String"]["fields"]
     assert string["excitation"]["enum"] == ["pluck", "strike"]
     assert string["decayMs"]["maximum"] == 30_000
+
+
+# --- The session verb and the explanation ------------------------------------------
+
+
+def music_session() -> Session:
+    session = Session()
+    session.new_voice("sine")
+    session.set_render_options(version=2)
+    return session
+
+
+def test_set_string_starts_the_block_and_patches_it() -> None:
+    session = music_session()
+    session.set_string(excitation="strike", decayMs=4000.0)
+    session.set_string(body=0.4)
+    string = session.spec.voices[0].string
+    assert string is not None
+    assert (string.excitation, string.decayMs, string.body) == ("strike", 4000.0, 0.4)
+    session.set_string(clear=True)
+    assert session.spec.voices[0].string is None
+
+
+def test_set_string_refuses_an_unknown_excitation() -> None:
+    session = music_session()
+    with pytest.raises(SpecError):
+        session.set_string(excitation="bow")
+    assert session.spec.voices[0].string is None
+
+
+def test_set_string_is_refused_on_version_one() -> None:
+    session = Session()
+    session.new_voice("sine")
+    with pytest.raises(SpecError) as caught:
+        session.set_string()
+    assert caught.value.error.field == "version"
+
+
+def test_the_explanation_names_the_string() -> None:
+    spec = parse_spec(
+        music(
+            {
+                "waveform": "sine",
+                "fundamentalMidi": 45,
+                "string": {"excitation": "strike", "position": 0.1, "body": 0.3, "bodyHz": 180},
+                "touch": {"cutoffOctaves": 2},
+            }
+        )
+    )
+    text = explain_spec(spec)
+    assert "a struck string at" in text
+    assert (
+        "a hammer at 0.1 of its length with brightness 0.6, ringing 2500 ms to silence "
+        "with damping 0.5, a body at 180 Hz mixed at 0.3"
+    ) in text
+    assert "touch moving the string's brightness with velocity" in text

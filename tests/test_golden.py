@@ -203,6 +203,26 @@ STAGE_PROBES: dict[str, Callable[[SoundSpec], bool]] = {
     "fm4: operators following a glide and a vibrato": lambda spec: _has_voice(
         spec, lambda v: v.fm4 is not None and v.glide is not None and v.vibrato is not None
     ),
+    # docs/prd/blipsmith-strings.md
+    "string: a pluck through a body": lambda spec: _has_voice(
+        spec,
+        lambda v: v.string is not None and v.string.excitation == "pluck" and v.string.body > 0,
+    ),
+    "string: a hammer strike": lambda spec: _has_voice(
+        spec, lambda v: v.string is not None and v.string.excitation == "strike"
+    ),
+    "string: a low string following a glide and a vibrato": lambda spec: _has_voice(
+        spec,
+        lambda v: (
+            v.string is not None
+            and v.glide is not None
+            and v.vibrato is not None
+            and (v.fundamentalMidi or 127) < 36
+        ),
+    ),
+    "string: touch on the brightness": lambda spec: _has_voice(
+        spec, lambda v: v.string is not None and v.touch is not None and v.touch.cutoffOctaves != 0
+    ),
 }
 
 

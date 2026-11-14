@@ -23,10 +23,12 @@ from blipsmith.spec import (
     AmMode,
     Effect,
     EffectKind,
+    Excitation,
     Fm4,
     LfoTarget,
     Operator,
     SoundSpec,
+    String,
     Voice,
     Waveform,
 )
@@ -109,6 +111,8 @@ def _stage_phrases(voice: Voice) -> list[str]:
         )
     if voice.fm4 is not None:
         stages.append(_fm4_phrase(voice.fm4))
+    if voice.string is not None:
+        stages.append(_string_phrase(voice.string))
     if voice.am is not None:
         mode = "ring modulation" if voice.am.mode is AmMode.RING else "amplitude modulation"
         stages.append(f"{mode} at {_number(voice.am.rateHz)} Hz")
@@ -182,6 +186,19 @@ def _operator_pitch(operator: Operator) -> str:
     return f"{_number(operator.ratio)}:1"
 
 
+def _string_phrase(string: String) -> str:
+    """A string: where it is set ringing, how bright, how long, how damped."""
+    action = "a hammer" if string.excitation is Excitation.STRIKE else "a pluck"
+    phrase = (
+        f"{action} at {_number(string.position)} of its length with brightness "
+        f"{_number(string.brightness)}, ringing {_number(string.decayMs)} ms to silence with "
+        f"damping {_number(string.damping)}"
+    )
+    if string.body > 0:
+        phrase += f", a body at {_number(string.bodyHz)} Hz mixed at {_number(string.body)}"
+    return phrase
+
+
 def _expression_phrases(voice: Voice) -> list[str]:
     """Music mode: what each note does beyond its pitch and level."""
     phrases: list[str] = []
@@ -194,6 +211,10 @@ def _expression_phrases(voice: Voice) -> list[str]:
                     voice.touch.fmIndex if voice.fm is not None or voice.fm4 is not None else 0.0,
                 ),
                 ("cutoff", voice.touch.cutoffOctaves if voice.filter is not None else 0.0),
+                (
+                    "string's brightness",
+                    voice.touch.cutoffOctaves if voice.string is not None else 0.0,
+                ),
                 ("attack", voice.touch.attackOctaves),
             )
             if amount != 0
@@ -230,9 +251,11 @@ def _placement_phrase(voice: Voice, channels: int) -> str:
 
 
 def explain_voice(voice: Voice, channels: int = 1) -> str:
-    opening = " ".join(
-        part for part in (_WAVEFORM_CHARACTER[voice.waveform], _pitch_phrase(voice)) if part
-    )
+    character = _WAVEFORM_CHARACTER[voice.waveform]
+    if voice.string is not None:
+        struck = voice.string.excitation is Excitation.STRIKE
+        character = "a struck string" if struck else "a plucked string"
+    opening = " ".join(part for part in (character, _pitch_phrase(voice)) if part)
     sentence = f"{opening} that {_envelope_phrase(voice.ampEnv)}"
     stages = _stage_phrases(voice)
     if stages:
