@@ -133,8 +133,11 @@ void PluckedString::excite(double period, NoiseSource& noise) {
     }
     const double scale =
         power > 0.0 ? 1.0 / std::sqrt(power / static_cast<double>(length)) : 0.0;
-    for (const double value : shaped) {
-        line_[write_ & mask_] = value * scale;
+    // A hammer's edge comes out half a period late, as at a pickup half a string
+    // away, so the notes of a struck chord do not all land their edge at once.
+    const std::uint32_t start = string_.excitation == Excitation::Strike ? length / 2 : 0;
+    for (std::uint32_t n = 0; n < length; ++n) {
+        line_[write_ & mask_] = shaped[(n + start) % length] * scale;
         ++write_;
     }
 }
