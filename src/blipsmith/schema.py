@@ -16,6 +16,8 @@ from pydantic.fields import FieldInfo
 
 from blipsmith.ranges import (
     DURATION_MS_COMPOSITION,
+    FM4_ALGORITHMS,
+    FM4_OPERATORS,
     MASTER_EFFECT_KINDS,
     MAX_CUTOFF_FRACTION,
     MAX_VOICES,
@@ -138,7 +140,7 @@ def _scalar(annotation: Any) -> str:
 # Fields only a version 2 spec may set.
 _MUSIC_FIELDS: dict[str, tuple[str, ...]] = {
     "Master": ("effects",),
-    "Voice": ("key", "touch", "glide", "vibrato"),
+    "Voice": ("key", "touch", "glide", "vibrato", "fm4"),
     "Track": ("name", "effects"),
     "Composition": ("loop",),
 }
@@ -187,6 +189,13 @@ def get_schema() -> dict[str, Any]:
                 "minTracks": 1,
                 "maxTracks": MUSIC_MAX_TRACKS,
                 "masterEffectKinds": list(MASTER_EFFECT_KINDS),
+                # Four-operator FM: per algorithm, the operators (1 to 4) that
+                # modulate each operator, and the carriers that are heard.
+                "fm4Operators": FM4_OPERATORS,
+                "fm4Algorithms": [
+                    {"modulators": [list(feeds) for feeds in routing], "carriers": list(carriers)}
+                    for routing, carriers in FM4_ALGORITHMS
+                ],
             },
         },
         "models": models,

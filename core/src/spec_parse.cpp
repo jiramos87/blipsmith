@@ -406,6 +406,34 @@ GlideMode glide_mode_from(const JsonValue& block) {
     return found->text == "always" ? GlideMode::Always : GlideMode::Legato;
 }
 
+Fm4 fm4_from(const JsonValue& block) {
+    Fm4 fm4;
+    fm4.algorithm = int_or(block, "algorithm", fm4.algorithm);
+    fm4.feedback = number_or(block, "feedback", fm4.feedback);
+    const JsonValue* operators = block.find("operators");
+    if (operators == nullptr || operators->kind != JsonValue::Kind::Array) {
+        return fm4;
+    }
+    int index = 0;
+    for (const JsonValue& entry : operators->items) {
+        if (index >= kFm4Operators) {
+            break;
+        }
+        if (entry.kind == JsonValue::Kind::Object) {
+            Operator& op = fm4.operators[index];
+            op.ratio = number_or(entry, "ratio", op.ratio);
+            op.fixedHz = number_or(entry, "fixedHz", op.fixedHz);
+            op.detuneCents = number_or(entry, "detuneCents", op.detuneCents);
+            op.level = number_or(entry, "level", op.level);
+            op.attackMs = number_or(entry, "attackMs", op.attackMs);
+            op.decayMs = number_or(entry, "decayMs", op.decayMs);
+            op.sustainLevel = number_or(entry, "sustainLevel", op.sustainLevel);
+        }
+        ++index;
+    }
+    return fm4;
+}
+
 EffectKind effect_kind_from(const JsonValue& block) {
     const JsonValue* found = block.find("kind");
     if (found == nullptr || found->kind != JsonValue::Kind::String) {
@@ -592,6 +620,10 @@ Spec parse_spec(const std::string& json) {
                     voice.hasGlide = true;
                     voice.glide.timeMs = number_or(*block, "timeMs", voice.glide.timeMs);
                     voice.glide.mode = glide_mode_from(*block);
+                }
+                if (const JsonValue* block = object_at(entry, "fm4")) {
+                    voice.hasFm4 = true;
+                    voice.fm4 = fm4_from(*block);
                 }
                 if (const JsonValue* block = object_at(entry, "vibrato")) {
                     voice.hasVibrato = true;

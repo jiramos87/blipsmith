@@ -38,6 +38,22 @@ TRACK_NAME_MAX_LENGTH = 40
 # The master chain is the shared room, run once per track so stems sum to the
 # mix; only kinds that are linear in their input allow that.
 MASTER_EFFECT_KINDS = ("delay", "reverb")
+# Music mode, four-operator FM: exactly this many operators, in one of the
+# eight classic algorithms. Each entry names, per operator, the operators that
+# modulate it, and which operators are heard (the carriers). Operators run in
+# order, so a modulator always comes before what it feeds. The core holds the
+# same table; a test keeps the two equal.
+FM4_OPERATORS = 4
+FM4_ALGORITHMS: tuple[tuple[tuple[tuple[int, ...], ...], tuple[int, ...]], ...] = (
+    (((), (1,), (2,), (3,)), (4,)),  # 0: 1 > 2 > 3 > 4
+    (((), (), (1, 2), (3,)), (4,)),  # 1: (1 + 2) > 3 > 4
+    (((), (), (2,), (1, 3)), (4,)),  # 2: (1 + (2 > 3)) > 4
+    (((), (1,), (), (2, 3)), (4,)),  # 3: ((1 > 2) + 3) > 4
+    (((), (1,), (), (3,)), (2, 4)),  # 4: (1 > 2) + (3 > 4)
+    (((), (1,), (1,), (1,)), (2, 3, 4)),  # 5: 1 > 2, 1 > 3, 1 > 4
+    (((), (1,), (), ()), (2, 3, 4)),  # 6: (1 > 2) + 3 + 4
+    (((), (), (), ()), (1, 2, 3, 4)),  # 7: 1 + 2 + 3 + 4
+)
 
 # A filter cutoff has a second, render-time ceiling: a biquad's coefficients only
 # stay well conditioned comfortably below Nyquist, and at Nyquist itself the
@@ -170,6 +186,28 @@ RANGES: dict[tuple[str, str], NumericRange] = {
     ("Vibrato", "rateHz"): NumericRange(0.1, 20, 5.5, "Hz", "vibrato speed"),
     ("Vibrato", "depthCents"): NumericRange(
         0, 200, 20, "cents", "pitch swing either side at full depth"
+    ),
+    # Fm4 (music mode): four sine operators in one of eight algorithms
+    ("Fm4", "feedback"): NumericRange(
+        0, 1, 0, "", "operator 1 feeding itself; 1 is pi radians, harsher and noisier"
+    ),
+    # Operator (one of an fm4 block's four)
+    ("Operator", "ratio"): NumericRange(
+        0.01, 24, 1, "", "frequency as a multiple of the voice's pitch"
+    ),
+    ("Operator", "fixedHz"): NumericRange(
+        1, 20_000, 440, "Hz", "optional fixed frequency; null follows the voice's pitch"
+    ),
+    ("Operator", "detuneCents"): NumericRange(
+        -100, 100, 0, "cents", "small offset from the ratio or fixed frequency"
+    ),
+    ("Operator", "level"): NumericRange(
+        0, 1, 1, "", "loudness of a carrier; depth of a modulator (1 is 4 pi radians)"
+    ),
+    ("Operator", "attackMs"): NumericRange(0, 10_000, 0, "ms", "silence to full level"),
+    ("Operator", "decayMs"): NumericRange(0, 10_000, 0, "ms", "full level to sustain"),
+    ("Operator", "sustainLevel"): NumericRange(
+        0, 1, 1, "", "level held after decay, to the end of the note's tail"
     ),
     # Composition
     ("Composition", "tempoBpm"): NumericRange(20, 300, 120, "BPM", "composition tempo"),

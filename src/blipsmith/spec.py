@@ -27,6 +27,7 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 
 from blipsmith.ranges import (
     DURATION_MS_COMPOSITION,
+    FM4_OPERATORS,
     MASTER_EFFECT_KINDS,
     MAX_VOICES,
     MUSIC_MAX_TRACKS,
@@ -221,6 +222,39 @@ class Vibrato(SpecModel):
     depthCents: float = RANGES[("Vibrato", "depthCents")].default
 
 
+class Operator(SpecModel):
+    """One of an fm4 block's four sine operators. It runs at `ratio` times the
+    voice's pitch, or at `fixedHz` when set. A carrier's level is its loudness; a
+    modulator's level is its depth, 1 being 4 pi radians. Its envelope rises
+    over `attackMs`, falls to `sustainLevel` over `decayMs` and holds there; the
+    voice's amp envelope carries the release."""
+
+    ratio: float = RANGES[("Operator", "ratio")].default
+    fixedHz: float | None = Field(default=None, exclude_if=_absent)
+    detuneCents: float = RANGES[("Operator", "detuneCents")].default
+    level: float = RANGES[("Operator", "level")].default
+    attackMs: float = RANGES[("Operator", "attackMs")].default
+    decayMs: float = RANGES[("Operator", "decayMs")].default
+    sustainLevel: float = RANGES[("Operator", "sustainLevel")].default
+
+
+def _default_operators() -> list[Operator]:
+    return [Operator() for _ in range(FM4_OPERATORS)]
+
+
+class Fm4(SpecModel):
+    """Music mode: four sine operators in place of the voice's oscillator.
+    `algorithm` picks how they feed each other (0 to 7, the classic set: 0 is
+    one stack 1 > 2 > 3 > 4, 7 is four carriers side by side). Operator 1 can
+    feed itself back by `feedback`."""
+
+    algorithm: Literal[0, 1, 2, 3, 4, 5, 6, 7] = 0
+    feedback: float = RANGES[("Fm4", "feedback")].default
+    operators: list[Operator] = Field(
+        default_factory=_default_operators, min_length=FM4_OPERATORS, max_length=FM4_OPERATORS
+    )
+
+
 class Limiter(SpecModel):
     """The master safety gate. There is deliberately no `enabled` field: the PRD
     makes the limiter and clip guard non-optional on every render."""
@@ -263,6 +297,8 @@ class Voice(SpecModel):
     touch: Touch | None = music_field()
     glide: Glide | None = music_field()
     vibrato: Vibrato | None = music_field()
+    # Music mode: four-operator FM, in place of the oscillator.
+    fm4: Fm4 | None = music_field()
 
 
 class Note(SpecModel):
@@ -364,7 +400,7 @@ def music_fields_in(spec: SoundSpec) -> list[str]:
     if spec.master.effects is not None:
         found.append("master.effects")
     for index, voice in enumerate(spec.voices):
-        for name in ("key", "touch", "glide", "vibrato"):
+        for name in ("key", "touch", "glide", "vibrato", "fm4"):
             if getattr(voice, name) is not None:
                 found.append(f"voices[{index}].{name}")
     if spec.composition is not None:
@@ -416,6 +452,18 @@ def _check_music(spec: SoundSpec) -> None:
                 f"voices[{index}].glide: a keyed voice plays its own pitch on every hit, so "
                 "it has nothing to glide between. Remove the glide or the key.",
                 field=f"voices[{index}].glide",
+            )
+        if voice.fm4 is not None and voice.fm is not None:
+            raise invalid_spec(
+                f"voices[{index}].fm4: a voice plays either the two-operator fm or the "
+                "four-operator fm4, not both. Remove one of them.",
+                field=f"voices[{index}].fm4",
+            )
+        if voice.fm4 is not None and voice.waveform is not Waveform.SINE:
+            raise invalid_spec(
+                f"voices[{index}].fm4: the four sine operators replace the oscillator, so the "
+                f"waveform must be 'sine', got {voice.waveform.value!r}.",
+                field=f"voices[{index}].waveform",
             )
     for index, effect in enumerate(spec.master.effects or []):
         if effect.kind.value not in MASTER_EFFECT_KINDS:

@@ -128,6 +128,27 @@ struct Vibrato {
     double depthCents = 20.0;
 };
 
+// Music mode, four-operator FM. One sine operator: its frequency, its level
+// (loudness as a carrier, depth as a modulator) and its envelope.
+struct Operator {
+    double ratio = 1.0;
+    // 0 means "follows the voice's pitch"; above 0, a fixed frequency in Hz.
+    double fixedHz = 0.0;
+    double detuneCents = 0.0;
+    double level = 1.0;
+    double attackMs = 0.0;
+    double decayMs = 0.0;
+    double sustainLevel = 1.0;
+};
+
+inline constexpr int kFm4Operators = 4;
+
+struct Fm4 {
+    int algorithm = 0;
+    double feedback = 0.0;
+    Operator operators[kFm4Operators];
+};
+
 // One flat struct per the published contract: each kind reads the parameters
 // that apply to it and ignores the rest.
 struct Effect {
@@ -177,6 +198,9 @@ struct Voice {
     Glide glide;
     bool hasVibrato = false;
     Vibrato vibrato;
+    // Music mode: four-operator FM in place of the oscillator.
+    bool hasFm4 = false;
+    Fm4 fm4;
 };
 
 // One scheduled event. The Python compiler has already expanded painted steps

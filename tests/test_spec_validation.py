@@ -63,6 +63,8 @@ def test_voice_surface_matches_prd() -> None:
         "touch",
         "glide",
         "vibrato",
+        # docs/prd/blipsmith-fm4.md: four-operator FM, version 2 only.
+        "fm4",
     }
 
 
