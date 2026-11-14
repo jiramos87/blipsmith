@@ -62,8 +62,8 @@ double PluckedString::period_for(double turns) const {
     return period > maxPeriod_ ? maxPeriod_ : period;
 }
 
-// One period of the line: the pluck's noise through a lowpass, or one hammer
-// pulse, both shaped by the same corner; then the comb of the place along the
+// One period of the line: the pluck's noise through a lowpass, or what one
+// hammer pulse leaves, both shaped by the same corner; then the comb of the place along the
 // string, the mean taken out (a string has no DC to ring) and the level set to
 // unit RMS, so a bright and a dull setting land alike.
 void PluckedString::excite(double period, NoiseSource& noise) {
@@ -82,8 +82,18 @@ void PluckedString::excite(double period, NoiseSource& noise) {
         if (samples > length) {
             samples = length;
         }
+        double area = 0.0;
         for (std::uint32_t n = 0; n < samples; ++n) {
             burst[n] = hammer(n, samples);
+            area += burst[n];
+        }
+        // A hammer gives the string a velocity, not a shape: the line holds its
+        // integral, taken around the period with the mean out so it closes.
+        const double mean = area / static_cast<double>(length);
+        double displacement = 0.0;
+        for (double& value : burst) {
+            displacement += value - mean;
+            value = displacement;
         }
     } else {
         for (double& value : burst) {

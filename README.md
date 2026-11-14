@@ -255,8 +255,9 @@ own, the sound of a guitar, a harp, a plucked bass, a dulcimer or a piano
 string. A voice without it plays exactly as before.
 
 - **Excitation.** `pluck` fills the string with a burst of the voice's seeded
-  noise; `strike` hits it with a hammer pulse. `position` (0.02 to 0.5) is where
-  along the string: near the end is thin and bright, the middle hollow.
+  noise; `strike` hits it with a hammer, which sets it moving rather than bending
+  it. `position` (0.02 to 0.5) is where along the string: near the end is thin
+  and bright, the middle hollow.
 - **Tone.** `brightness` (0 to 1) is how hard and bright the pluck or hammer is,
   `damping` (0 to 1) how much faster the high partials die than the fundamental,
   `decayMs` how long the string takes to fall 60 dB. `body` mixes in a resonance
