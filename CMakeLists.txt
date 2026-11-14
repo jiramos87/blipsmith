@@ -46,6 +46,7 @@ pybind11_add_module(_core NO_EXTRAS
   core/src/bus.cpp
   core/src/core.cpp
   core/src/env.cpp
+  core/src/expression.cpp
   core/src/features.cpp
   core/src/filter.cpp
   core/src/fx.cpp

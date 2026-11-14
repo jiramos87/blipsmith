@@ -5,6 +5,7 @@
 
 #include "bus.h"
 #include "env.h"
+#include "expression.h"
 #include "fx.h"
 #include "seq.h"
 #include "tables.h"
@@ -121,12 +122,22 @@ MusicMix render_music(const Spec& spec, std::uint32_t frames, bool wantStems) {
             }
 
             voiceLine.assign(span, 0.0);
+            // A voice with touch plays each note through its own copy, reshaped by
+            // the note's velocity; one without it plays the voice as written.
+            Voice touched;
+            if (voice.hasTouch) {
+                touched = voice;
+            }
             for (const ScheduledNote& note : plan) {
                 if (note.startFrame >= frames || !voice_plays(voice, note.midiNote)) {
                     continue;
                 }
+                if (voice.hasTouch) {
+                    apply_touch(voice, note.velocity, touched);
+                }
+                const Voice& played = voice.hasTouch ? touched : voice;
                 const AmpEnvelope envelope =
-                    AmpEnvelope::gated(voice.ampEnv, note.heldFrames, spec.sampleRate);
+                    AmpEnvelope::gated(played.ampEnv, note.heldFrames, spec.sampleRate);
                 std::uint32_t count = envelope.totalFrames();
                 const std::uint32_t room = span - note.startFrame;
                 if (count > room) {
@@ -134,7 +145,7 @@ MusicMix render_music(const Spec& spec, std::uint32_t frames, bool wantStems) {
                 }
                 const double velocity = note.velocity;
                 double* start = voiceLine.data() + note.startFrame;
-                run_voice_chain(spec, voice, static_cast<int>(voiceIndex),
+                run_voice_chain(spec, played, static_cast<int>(voiceIndex),
                                 note_frequency(voice, note.midiNote), envelope, count,
                                 [&](std::uint32_t frame, double sample) {
                                     start[frame] += sample * velocity;
