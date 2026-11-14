@@ -9,6 +9,7 @@ without the blocks is the control in every case.
 from __future__ import annotations
 
 import struct
+from collections.abc import Sequence
 from itertools import pairwise
 from typing import Any
 
@@ -99,7 +100,7 @@ ORGAN = {
 }
 
 
-def line(voice: dict[str, Any], notes: list[tuple[float, float, int]]) -> dict[str, Any]:
+def line(voice: dict[str, Any], notes: Sequence[tuple[float, float, int]]) -> dict[str, Any]:
     """A one-track piece of (startBeat, durationBeats, midiNote) notes."""
     return {
         "version": 2,
