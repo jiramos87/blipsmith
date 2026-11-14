@@ -9,7 +9,7 @@ drive a physical synth, one typed setter at a time, and a human drives the same
 engine from a terminal. Both paths run the same code and produce the same bytes.
 
 **Same spec, same seed, identical WAV. Every time, on every supported platform.**
-That is the contract the whole design serves, and CI proves it by rendering 35
+That is the contract the whole design serves, and CI proves it by rendering 43
 golden specs on Linux x86_64 and macOS arm64 and comparing SHA-256 sets.
 
 ## Install
@@ -40,7 +40,7 @@ claude mcp add blipsmith -- uv run --project /path/to/blipsmith blipsmith-mcp
 ```
 
 Then ask for a sound. The agent holds one session, shaped like a synth front
-panel: 32 tools, grouped so that one call sets one block of related parameters.
+panel: 35 tools, grouped so that one call sets one block of related parameters.
 
 > **You:** Make me a laser shot, but heavier and dirtier than the stock one.
 
@@ -205,6 +205,24 @@ sound.wav, sound.features["integratedLufs"], [stem.wav for stem in sound.stems]
 and `blipsmith render piece.spec.json --json` prints the result as one JSON
 object. The behaviour is specified in `docs/prd/blipsmith-music-mode.md`.
 
+### Expressive notes
+
+Three optional blocks on a music-mode voice give each note expression. A voice
+without them plays exactly as before.
+
+- **Touch.** Velocity changes the tone, not only the level: per unit of velocity
+  above `pivot`, the FM index moves by `fmIndex`, the cutoff by `cutoffOctaves`
+  and the attack shortens by `attackOctaves`. A harder note is brighter and
+  sharper; at the pivot the voice plays as written.
+- **Glide.** Each note slides in from the previous note's pitch over `timeMs`:
+  in `legato` mode only when the previous note is still held, in `always` mode
+  from any. Kit voices do not glide.
+- **Late vibrato.** Nothing for `delayMs` from the note's start, then a vibrato
+  of `depthCents` at `rateHz` fades in over `fadeMs`, so a held note blooms.
+
+The MCP verbs are `set_touch`, `set_glide` and `set_vibrato`. The behaviour is
+specified in `docs/prd/blipsmith-expressive-notes.md`.
+
 ## Determinism, and how it is enforced
 
 The audio path uses fixed-point phase accumulators and baked wavetables, with no
@@ -221,7 +239,7 @@ That invariant is enforced, not just intended:
   `sin()` and asserts the check rejects it, so the gate is known to be able to
   fail.
 - `-ffp-contract=off`, no fast-math, C++17, pinned in `CMakeLists.txt`.
-- 40 golden specs cover every waveform, every processing stage and every preset
+- 43 golden specs cover every waveform, every processing stage and every preset
   archetype. Each one asserts its recorded hash, non-clipping output, and a peak
   at the normalization target.
 - CI renders that corpus on Linux x86_64 and macOS arm64 and diffs the hash

@@ -210,6 +210,47 @@ def build_server(session: Session | None = None) -> FastMCP:
         piece that plays only notes of that key, at its own pitch; -1 clears it."""
         return _guarded(lambda: state.set_voice_output(pan, mixDb, track, key))
 
+    # --- Expressive notes (music mode) ------------------------------------------
+
+    @server.tool()
+    def set_touch(
+        pivot: float | None = None,
+        fmIndex: float | None = None,
+        cutoffOctaves: float | None = None,
+        attackOctaves: float | None = None,
+        clear: bool = False,
+    ) -> dict[str, Any]:
+        """Music mode: velocity changes this voice's tone, not only its level. At
+        `pivot` the voice plays as written; per unit of velocity above it the FM
+        index moves by `fmIndex`, the cutoff by `cutoffOctaves`, and the attack
+        shortens by `attackOctaves` (softer notes move the other way).
+        `clear` removes it."""
+        return _guarded(
+            lambda: state.set_touch(pivot, fmIndex, cutoffOctaves, attackOctaves, clear)
+        )
+
+    @server.tool()
+    def set_glide(
+        timeMs: float | None = None, mode: str | None = None, clear: bool = False
+    ) -> dict[str, Any]:
+        """Music mode: each note slides in from the previous note's pitch over
+        `timeMs`. `mode` legato glides only when the previous note is still held,
+        always from any previous note. Not on a kit voice. `clear` removes it."""
+        return _guarded(lambda: state.set_glide(timeMs, mode, clear))
+
+    @server.tool()
+    def set_vibrato(
+        delayMs: float | None = None,
+        fadeMs: float | None = None,
+        rateHz: float | None = None,
+        depthCents: float | None = None,
+        clear: bool = False,
+    ) -> dict[str, Any]:
+        """Music mode: a late vibrato. Nothing for `delayMs` from each note's
+        start, then it fades in over `fadeMs` to `depthCents` either side at
+        `rateHz`, so a held note blooms. `clear` removes it."""
+        return _guarded(lambda: state.set_vibrato(delayMs, fadeMs, rateHz, depthCents, clear))
+
     # --- Master and render options -------------------------------------------
 
     @server.tool()

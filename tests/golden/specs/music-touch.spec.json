@@ -1,0 +1,139 @@
+{
+  "version": 2,
+  "seed": 31,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-touch",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Expressive notes: touch. An FM key and a snare whose tone follows each note's velocity."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fm": {
+        "ratio": 1,
+        "index": 1.2
+      },
+      "filter": {
+        "type": "lowpass",
+        "cutoffHz": 1800,
+        "resonance": 0.8
+      },
+      "ampEnv": {
+        "attackMs": 12,
+        "decayMs": 500,
+        "sustainLevel": 0.3,
+        "releaseMs": 200
+      },
+      "touch": {
+        "pivot": 0.6,
+        "fmIndex": 3,
+        "cutoffOctaves": 2.5,
+        "attackOctaves": 2
+      },
+      "track": 0
+    },
+    {
+      "waveform": "noise_white",
+      "key": 38,
+      "filter": {
+        "type": "bandpass",
+        "cutoffHz": 1500,
+        "resonance": 1.2
+      },
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 120,
+        "sustainLevel": 0,
+        "releaseMs": 40
+      },
+      "touch": {
+        "pivot": 0.5,
+        "cutoffOctaves": 1.5
+      },
+      "track": 1
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "keys",
+        "pan": -0.2,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 0.75,
+            "midiNote": 57,
+            "velocity": 0.25
+          },
+          {
+            "startBeat": 0.5,
+            "durationBeats": 0.75,
+            "midiNote": 60,
+            "velocity": 0.45
+          },
+          {
+            "startBeat": 1,
+            "durationBeats": 0.75,
+            "midiNote": 64,
+            "velocity": 0.65
+          },
+          {
+            "startBeat": 1.5,
+            "durationBeats": 0.75,
+            "midiNote": 67,
+            "velocity": 0.85
+          },
+          {
+            "startBeat": 2,
+            "durationBeats": 1.5,
+            "midiNote": 69,
+            "velocity": 1.0
+          },
+          {
+            "startBeat": 2,
+            "durationBeats": 1.5,
+            "midiNote": 60,
+            "velocity": 0.3
+          }
+        ]
+      },
+      {
+        "name": "snare",
+        "pan": 0.2,
+        "notes": [
+          {
+            "startBeat": 0.5,
+            "durationBeats": 0.25,
+            "midiNote": 38,
+            "velocity": 0.2
+          },
+          {
+            "startBeat": 1.5,
+            "durationBeats": 0.25,
+            "midiNote": 38,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 2.5,
+            "durationBeats": 0.25,
+            "midiNote": 38,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3.25,
+            "durationBeats": 0.25,
+            "midiNote": 38,
+            "velocity": 1.0
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -155,6 +155,23 @@ STAGE_PROBES: dict[str, Callable[[SoundSpec], bool]] = {
     ),
     "music: a master room": lambda spec: bool(spec.master.effects),
     "music: the loop": lambda spec: spec.composition is not None and bool(spec.composition.loop),
+    # docs/prd/blipsmith-expressive-notes.md
+    "expressive: touch on a pitched voice": lambda spec: _has_voice(
+        spec, lambda v: v.touch is not None and v.key is None
+    ),
+    "expressive: touch on a kit voice": lambda spec: _has_voice(
+        spec, lambda v: v.touch is not None and v.key is not None
+    ),
+    "expressive: legato glide": lambda spec: _has_voice(
+        spec, lambda v: v.glide is not None and v.glide.mode == "legato"
+    ),
+    "expressive: always glide": lambda spec: _has_voice(
+        spec, lambda v: v.glide is not None and v.glide.mode == "always"
+    ),
+    "expressive: late vibrato": lambda spec: _has_voice(spec, lambda v: v.vibrato is not None),
+    "expressive: vibrato beside an LFO on pitch": lambda spec: _has_voice(
+        spec, lambda v: v.vibrato is not None and v.lfo is not None and v.lfo.target == "pitch"
+    ),
 }
 
 

@@ -118,6 +118,7 @@ def _stage_phrases(voice: Voice) -> list[str]:
             f"{_LFO_TARGET_NAME[voice.lfo.target]} from a {_number(voice.lfo.rateHz)} Hz "
             f"{voice.lfo.shape.value} LFO"
         )
+    stages.extend(_expression_phrases(voice))
     if voice.filter is not None:
         stages.append(
             f"a {voice.filter.type.value} filter at {_number(voice.filter.cutoffHz)} Hz"
@@ -137,6 +138,36 @@ def _stage_phrases(voice: Voice) -> list[str]:
     stages.extend(_effect_phrase(effect) for effect in voice.effects)
 
     return stages
+
+
+def _expression_phrases(voice: Voice) -> list[str]:
+    """Music mode: what each note does beyond its pitch and level."""
+    phrases: list[str] = []
+    if voice.touch is not None:
+        moved = [
+            name
+            for name, amount in (
+                ("FM index", voice.touch.fmIndex if voice.fm is not None else 0.0),
+                ("cutoff", voice.touch.cutoffOctaves if voice.filter is not None else 0.0),
+                ("attack", voice.touch.attackOctaves),
+            )
+            if amount != 0
+        ]
+        if moved:
+            phrases.append(
+                f"touch moving the {_join(moved)} with velocity "
+                f"(as written at {_number(voice.touch.pivot)})"
+            )
+    if voice.glide is not None and voice.glide.timeMs > 0:
+        phrases.append(f"a {_number(voice.glide.timeMs)} ms {voice.glide.mode.value} glide")
+    if voice.vibrato is not None and voice.vibrato.depthCents > 0:
+        phrases.append(
+            f"a {_number(voice.vibrato.depthCents)} cent vibrato at "
+            f"{_number(voice.vibrato.rateHz)} Hz that starts after "
+            f"{_number(voice.vibrato.delayMs)} ms and fades in over "
+            f"{_number(voice.vibrato.fadeMs)} ms"
+        )
+    return phrases
 
 
 def _join(parts: list[str]) -> str:

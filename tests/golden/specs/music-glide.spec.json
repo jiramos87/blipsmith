@@ -1,0 +1,127 @@
+{
+  "version": 2,
+  "seed": 32,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-glide",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Expressive notes: glide. A legato lead that slides only between held notes, and a bass that always slides."
+  },
+  "voices": [
+    {
+      "waveform": "saw",
+      "filter": {
+        "type": "lowpass",
+        "cutoffHz": 2400,
+        "resonance": 0.9
+      },
+      "ampEnv": {
+        "attackMs": 5,
+        "decayMs": 200,
+        "sustainLevel": 0.7,
+        "releaseMs": 80
+      },
+      "glide": {
+        "timeMs": 120,
+        "mode": "legato"
+      },
+      "track": 0
+    },
+    {
+      "waveform": "triangle",
+      "ampEnv": {
+        "attackMs": 4,
+        "decayMs": 150,
+        "sustainLevel": 0.8,
+        "releaseMs": 60
+      },
+      "glide": {
+        "timeMs": 60,
+        "mode": "always"
+      },
+      "track": 1
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "lead",
+        "pan": 0.15,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 1,
+            "midiNote": 64,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "durationBeats": 0.5,
+            "midiNote": 69,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.5,
+            "durationBeats": 0.5,
+            "midiNote": 67,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2.25,
+            "durationBeats": 0.75,
+            "midiNote": 72,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3,
+            "durationBeats": 1,
+            "midiNote": 60,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3,
+            "durationBeats": 1,
+            "midiNote": 67,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "bass",
+        "pan": -0.1,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 0.5,
+            "midiNote": 40,
+            "velocity": 0.9
+          },
+          {
+            "startBeat": 1,
+            "durationBeats": 0.5,
+            "midiNote": 45,
+            "velocity": 0.9
+          },
+          {
+            "startBeat": 2,
+            "durationBeats": 0.5,
+            "midiNote": 43,
+            "velocity": 0.9
+          },
+          {
+            "startBeat": 3,
+            "durationBeats": 1,
+            "midiNote": 36,
+            "velocity": 0.9
+          }
+        ]
+      }
+    ]
+  }
+}

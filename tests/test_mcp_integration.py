@@ -65,6 +65,10 @@ SESSION_TOOLS = (
     "export_spec",
     "import_spec",
     "explain_session",
+    # docs/prd/blipsmith-expressive-notes.md
+    "set_touch",
+    "set_glide",
+    "set_vibrato",
 )
 STATELESS_TOOLS = ("render_spec", "get_schema", "list_presets", "load_preset", "explain_spec")
 PINNED_TOOLS = (*SESSION_TOOLS, *STATELESS_TOOLS)
@@ -671,6 +675,9 @@ def test_every_pinned_tool_is_exercised(tmp_path: Path) -> None:
         await mcp.call("set_render_options", version=2)
         added = await mcp.call("add_track")
         await mcp.call("remove_track", track=added["track"])
+        await mcp.call("set_touch", cutoffOctaves=2.0)
+        await mcp.call("set_glide", timeMs=60.0, mode="always")
+        await mcp.call("set_vibrato", depthCents=15.0)
         await mcp.call("explain_session")
         await mcp.call("render", outDir=str(tmp_path))
         exported = await mcp.call("export_spec")

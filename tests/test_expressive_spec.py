@@ -12,8 +12,10 @@ from typing import Any
 
 import pytest
 
+from blipsmith.explain import explain_spec
 from blipsmith.result import SpecError
 from blipsmith.schema import get_schema
+from blipsmith.session import Session
 from blipsmith.spec import parse_spec, to_canonical_json, validate_spec
 
 BLOCKS = ("touch", "glide", "vibrato")
@@ -103,3 +105,60 @@ def test_schema_publishes_the_blocks_as_music_fields() -> None:
         assert voice[block]["musicMode"] is True
     assert schema["models"]["Glide"]["fields"]["mode"]["enum"] == ["legato", "always"]
     assert schema["models"]["Vibrato"]["fields"]["depthCents"]["unit"] == "cents"
+
+
+# --- The session verbs and the explanation -----------------------------------------
+
+
+def music_session() -> Session:
+    session = Session()
+    session.new_voice("saw")
+    session.set_render_options(version=2)
+    return session
+
+
+def test_the_setters_patch_each_block_from_its_defaults() -> None:
+    session = music_session()
+    session.set_touch(cutoffOctaves=2.0)
+    session.set_touch(pivot=0.4)
+    session.set_glide(mode="always")
+    session.set_vibrato(depthCents=30.0)
+    voice = session.spec.voices[0]
+    assert voice.touch is not None and voice.glide is not None and voice.vibrato is not None
+    assert (voice.touch.pivot, voice.touch.cutoffOctaves) == (0.4, 2.0)
+    assert (voice.glide.timeMs, voice.glide.mode.value) == (80.0, "always")
+    assert (voice.vibrato.depthCents, voice.vibrato.delayMs) == (30.0, 250.0)
+
+
+def test_clear_removes_a_block() -> None:
+    session = music_session()
+    session.set_vibrato(depthCents=30.0)
+    session.set_vibrato(clear=True)
+    assert session.spec.voices[0].vibrato is None
+
+
+def test_the_setters_are_refused_on_version_one() -> None:
+    session = Session()
+    session.new_voice("saw")
+    with pytest.raises(SpecError) as caught:
+        session.set_glide(timeMs=50.0)
+    assert caught.value.error.field == "version"
+    assert session.spec.voices[0].glide is None
+
+
+def test_the_explanation_names_each_block() -> None:
+    spec = parse_spec(
+        music(
+            {
+                "waveform": "saw",
+                "filter": {"type": "lowpass"},
+                "touch": {"cutoffOctaves": 2, "attackOctaves": 1},
+                "glide": {"timeMs": 60},
+                "vibrato": {"depthCents": 25},
+            }
+        )
+    )
+    text = explain_spec(spec)
+    assert "touch moving the cutoff and attack with velocity (as written at 0.6)" in text
+    assert "a 60 ms legato glide" in text
+    assert "a 25 cent vibrato at 5.5 Hz that starts after 250 ms" in text

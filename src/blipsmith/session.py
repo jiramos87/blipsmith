@@ -359,6 +359,62 @@ class Session:
 
         return self._apply(mutate)
 
+    def _expression_block(
+        self, key: str, what: str, clear: bool, fields: dict[str, Any]
+    ) -> list[SpecWarning]:
+        """Music mode: patch one of a voice's expression blocks, starting it from
+        its defaults the first time; `clear` removes it."""
+
+        def mutate(data: SpecData) -> None:
+            self._music(data, what)
+            voice = self._voice(data)
+            if clear:
+                voice[key] = None
+                return
+            voice[key] = {**(voice.get(key) or {}), **_given(**fields)}
+
+        return self._apply(mutate)
+
+    def set_touch(
+        self,
+        pivot: float | None = None,
+        fmIndex: float | None = None,
+        cutoffOctaves: float | None = None,
+        attackOctaves: float | None = None,
+        clear: bool = False,
+    ) -> list[SpecWarning]:
+        return self._expression_block(
+            "touch",
+            "touch",
+            clear,
+            {
+                "pivot": pivot,
+                "fmIndex": fmIndex,
+                "cutoffOctaves": cutoffOctaves,
+                "attackOctaves": attackOctaves,
+            },
+        )
+
+    def set_glide(
+        self, timeMs: float | None = None, mode: str | None = None, clear: bool = False
+    ) -> list[SpecWarning]:
+        return self._expression_block("glide", "glide", clear, {"timeMs": timeMs, "mode": mode})
+
+    def set_vibrato(
+        self,
+        delayMs: float | None = None,
+        fadeMs: float | None = None,
+        rateHz: float | None = None,
+        depthCents: float | None = None,
+        clear: bool = False,
+    ) -> list[SpecWarning]:
+        return self._expression_block(
+            "vibrato",
+            "a late vibrato",
+            clear,
+            {"delayMs": delayMs, "fadeMs": fadeMs, "rateHz": rateHz, "depthCents": depthCents},
+        )
+
     # --- Master and render options -------------------------------------------
 
     def set_master(
