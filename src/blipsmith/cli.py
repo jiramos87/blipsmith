@@ -100,6 +100,8 @@ def _features_line(features: dict[str, float | None] | None) -> str:
 def _print_result(result: RenderResult) -> None:
     print(result.wavPath)
     print(result.specPath)
+    for stem in result.stems:
+        print(f"  stem  {stem.wavPath}")
     line = _features_line(result.features)
     if line:
         print(f"  {line}")
@@ -131,7 +133,14 @@ def cmd_render(args: argparse.Namespace) -> int:
     if args.seed is not None and isinstance(data, dict):
         data["seed"] = args.seed
 
-    result = render(data, out_dir=args.out_dir, name=args.name, overwrite=args.overwrite)
+    result = render(
+        data, out_dir=args.out_dir, name=args.name, overwrite=args.overwrite, stems=args.stems
+    )
+    if args.json:
+        # One JSON object, success or not, so a program reads one shape; the
+        # exit code still says which it was.
+        print(json.dumps(result.model_dump(mode="json"), indent=2, sort_keys=True))
+        return EXIT_FAILED if _failed(result) else EXIT_OK
     if _failed(result):
         raise CliError(_reason(result))
     _print_result(result)
@@ -301,6 +310,16 @@ def build_parser() -> argparse.ArgumentParser:
     )
     render_cmd.add_argument("--seed", type=int, default=None, help="override the spec's seed")
     render_cmd.add_argument("--name", default=None, help="override the output file stem")
+    render_cmd.add_argument(
+        "--stems",
+        action="store_true",
+        help="music mode: also write one WAV per track, adding up to the mix.",
+    )
+    render_cmd.add_argument(
+        "--json",
+        action="store_true",
+        help="print the result as one JSON object instead of lines.",
+    )
     _add_output_flags(render_cmd)
     render_cmd.set_defaults(handler=cmd_render)
 

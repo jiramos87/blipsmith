@@ -15,11 +15,11 @@ from __future__ import annotations
 
 import json
 import os
+import re
 from pathlib import Path
 from typing import Any
 
-from blipsmith import _core
-from blipsmith.composition import compile_composition
+from blipsmith.api import render_validated, stems_need_music
 from blipsmith.explain import explain_spec
 from blipsmith.result import (
     ErrorCode,
@@ -27,8 +27,9 @@ from blipsmith.result import (
     RenderResult,
     RenderStatus,
     SpecError,
+    StemFile,
 )
-from blipsmith.spec import SoundSpec, to_canonical_json, validate_for_render
+from blipsmith.spec import SoundSpec, validate_for_render
 
 OUT_DIR_ENV = "BLIPSMITH_OUT_DIR"
 DEFAULT_OUT_DIR = "blipsmith-out"
@@ -51,6 +52,16 @@ def to_sidecar_json(spec: SoundSpec) -> str:
     return json.dumps(spec.model_dump(mode="json"), indent=2, sort_keys=True) + "\n"
 
 
+def stem_filename(stem: str, track: int, name: str | None) -> str:
+    """`{stem}.stem-{NN}[-{name}].wav`, the track name cut down to characters
+    that are safe in a filename on every platform."""
+    suffix = ""
+    if name:
+        safe = re.sub(r"[^A-Za-z0-9_-]+", "-", name).strip("-")
+        suffix = f"-{safe}" if safe else ""
+    return f"{stem}.stem-{track:02d}{suffix}.wav"
+
+
 def _failed(message: str) -> RenderResult:
     return RenderResult(
         status=RenderStatus.RENDER_FAILED,
@@ -64,22 +75,21 @@ def render(
     out_dir: str | Path | None = None,
     name: str | None = None,
     overwrite: bool = False,
+    stems: bool = False,
 ) -> RenderResult:
-    """Render a spec to `{name}.wav` plus its `{name}.spec.json` sidecar.
+    """Render a spec to `{name}.wav` plus its `{name}.spec.json` sidecar, and
+    with `stems` (music mode only) one `{name}.stem-NN[-track].wav` per track.
 
     Returns a `RenderResult` in every case rather than raising, so the MCP and
     CLI surfaces can report a failure as data.
     """
     try:
         spec, warnings = validate_for_render(spec_data)
+        if stems and not spec.is_music:
+            # Refused before anything touches the filesystem, like any bad spec.
+            raise stems_need_music()
     except SpecError as exc:
         return exc.as_result()
-
-    # The compiled spec is what the core plays; the authored one is what the
-    # sidecar keeps, so a human still edits the step grid they painted rather
-    # than the note list it expanded into. Both render the same bytes.
-    compiled, composition_warnings = compile_composition(spec)
-    warnings = [*warnings, *composition_warnings]
 
     stem = name if name is not None else spec.meta.name
     # The name reaches here from spec `meta`, which an agent controls. Keeping it
@@ -103,25 +113,41 @@ def render(
             "Choose a different directory or fix its permissions."
         )
 
+    stem_paths: list[Path] = []
+    if stems and spec.composition is not None:
+        stem_paths = [
+            directory / stem_filename(stem, index, track.name)
+            for index, track in enumerate(spec.composition.tracks)
+        ]
+
     if not overwrite:
-        for target in (wav_path, spec_path):
+        for target in (wav_path, spec_path, *stem_paths):
             if target.exists():
                 return _failed(
                     f"refusing to overwrite {target}. Use the overwrite option "
                     "(`--overwrite` on the CLI) to replace it, or render under a different name."
                 )
 
+    # The compiled spec is what the core plays; the authored one is what the
+    # sidecar keeps, so a human still edits the step grid they painted rather
+    # than the note list it expanded into. Both render the same bytes.
     try:
-        rendered = _core.render(to_canonical_json(compiled))
+        rendered = render_validated(spec, warnings, stems=stems)
+    except SpecError as exc:
+        return exc.as_result()
     except Exception as exc:  # the core reports every failure as an exception
         return _failed(f"the native core failed to render: {exc}")
+    warnings = rendered.warnings
 
     written: list[Path] = []
     try:
-        wav_path.write_bytes(rendered["wav"])
+        wav_path.write_bytes(rendered.wav)
         written.append(wav_path)
         spec_path.write_text(to_sidecar_json(spec), encoding="utf-8")
         written.append(spec_path)
+        for path, piece in zip(stem_paths, rendered.stems, strict=True):
+            path.write_bytes(piece.wav)
+            written.append(path)
     except OSError as exc:
         # A half-written pair is worse than none: the sidecar would no longer
         # regenerate the WAV beside it.
@@ -137,6 +163,10 @@ def render(
         wavPath=str(wav_path),
         specPath=str(spec_path),
         explanation=explain_spec(spec),
-        features=rendered["features"],
+        features=dict(rendered.features),
+        stems=[
+            StemFile(track=piece.track, name=piece.name, wavPath=str(path))
+            for path, piece in zip(stem_paths, rendered.stems, strict=True)
+        ],
         warnings=warnings,
     )

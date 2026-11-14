@@ -35,4 +35,8 @@ try:
 except metadata.PackageNotFoundError:
     __version__ = "0.0.0+unknown"
 
-__all__ = ["__version__", "_core"]
+# The library call. Imported after the core so a missing core still fails with
+# the hint above rather than inside a module that needs it.
+from blipsmith.api import Rendered, Stem, render_sound  # noqa: E402
+
+__all__ = ["Rendered", "Stem", "__version__", "_core", "render_sound"]
