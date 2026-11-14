@@ -398,6 +398,14 @@ FilterType filter_type_from(const JsonValue& block) {
     return FilterType::Lowpass;
 }
 
+GlideMode glide_mode_from(const JsonValue& block) {
+    const JsonValue* found = block.find("mode");
+    if (found == nullptr || found->kind != JsonValue::Kind::String) {
+        return GlideMode::Legato;
+    }
+    return found->text == "always" ? GlideMode::Always : GlideMode::Legato;
+}
+
 EffectKind effect_kind_from(const JsonValue& block) {
     const JsonValue* found = block.find("kind");
     if (found == nullptr || found->kind != JsonValue::Kind::String) {
@@ -571,6 +579,28 @@ Spec parse_spec(const std::string& json) {
                 voice.mixDb = number_or(entry, "mixDb", voice.mixDb);
                 voice.track = int_or(entry, "track", voice.track);
                 voice.key = int_or(entry, "key", -1);
+                if (const JsonValue* block = object_at(entry, "touch")) {
+                    voice.hasTouch = true;
+                    voice.touch.pivot = number_or(*block, "pivot", voice.touch.pivot);
+                    voice.touch.fmIndex = number_or(*block, "fmIndex", voice.touch.fmIndex);
+                    voice.touch.cutoffOctaves =
+                        number_or(*block, "cutoffOctaves", voice.touch.cutoffOctaves);
+                    voice.touch.attackOctaves =
+                        number_or(*block, "attackOctaves", voice.touch.attackOctaves);
+                }
+                if (const JsonValue* block = object_at(entry, "glide")) {
+                    voice.hasGlide = true;
+                    voice.glide.timeMs = number_or(*block, "timeMs", voice.glide.timeMs);
+                    voice.glide.mode = glide_mode_from(*block);
+                }
+                if (const JsonValue* block = object_at(entry, "vibrato")) {
+                    voice.hasVibrato = true;
+                    voice.vibrato.delayMs = number_or(*block, "delayMs", voice.vibrato.delayMs);
+                    voice.vibrato.fadeMs = number_or(*block, "fadeMs", voice.vibrato.fadeMs);
+                    voice.vibrato.rateHz = number_or(*block, "rateHz", voice.vibrato.rateHz);
+                    voice.vibrato.depthCents =
+                        number_or(*block, "depthCents", voice.vibrato.depthCents);
+                }
                 spec.voices.push_back(voice);
             }
         }

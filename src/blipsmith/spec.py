@@ -86,6 +86,11 @@ class AmMode(StrEnum):
     RING = "ring"
 
 
+class GlideMode(StrEnum):
+    LEGATO = "legato"
+    ALWAYS = "always"
+
+
 class EffectKind(StrEnum):
     DISTORTION = "distortion"
     WAVEFOLD = "wavefold"
@@ -186,6 +191,36 @@ class Effect(SpecModel):
     damping: float = RANGES[("Effect", "damping")].default
 
 
+class Touch(SpecModel):
+    """Music mode: velocity changes the tone, not only the level. At `pivot` the
+    voice plays as authored; each amount is per unit of velocity above it, so a
+    softer note moves the other way. Level still follows velocity as before."""
+
+    pivot: float = RANGES[("Touch", "pivot")].default
+    fmIndex: float = RANGES[("Touch", "fmIndex")].default
+    cutoffOctaves: float = RANGES[("Touch", "cutoffOctaves")].default
+    attackOctaves: float = RANGES[("Touch", "attackOctaves")].default
+
+
+class Glide(SpecModel):
+    """Music mode: each note starts at the previous note's pitch and slides to its
+    own. `legato` glides only when the previous note is still held; `always`
+    glides from any previous note."""
+
+    timeMs: float = RANGES[("Glide", "timeMs")].default
+    mode: GlideMode = GlideMode.LEGATO
+
+
+class Vibrato(SpecModel):
+    """Music mode: a late vibrato. Silent for `delayMs` from each note's start,
+    then fading in to full depth over `fadeMs`, so a held note blooms."""
+
+    delayMs: float = RANGES[("Vibrato", "delayMs")].default
+    fadeMs: float = RANGES[("Vibrato", "fadeMs")].default
+    rateHz: float = RANGES[("Vibrato", "rateHz")].default
+    depthCents: float = RANGES[("Vibrato", "depthCents")].default
+
+
 class Limiter(SpecModel):
     """The master safety gate. There is deliberately no `enabled` field: the PRD
     makes the limiter and clip guard non-optional on every render."""
@@ -223,6 +258,11 @@ class Voice(SpecModel):
     # Music mode: on a kit track, the MIDI note this voice answers to. It then
     # plays only that note, at its own pitch.
     key: int | None = music_field()
+    # Music mode: expressive notes. Touch shapes each note's tone by its
+    # velocity, glide slides in from the previous note, vibrato blooms late.
+    touch: Touch | None = music_field()
+    glide: Glide | None = music_field()
+    vibrato: Vibrato | None = music_field()
 
 
 class Note(SpecModel):
@@ -324,8 +364,9 @@ def music_fields_in(spec: SoundSpec) -> list[str]:
     if spec.master.effects is not None:
         found.append("master.effects")
     for index, voice in enumerate(spec.voices):
-        if voice.key is not None:
-            found.append(f"voices[{index}].key")
+        for name in ("key", "touch", "glide", "vibrato"):
+            if getattr(voice, name) is not None:
+                found.append(f"voices[{index}].{name}")
     if spec.composition is not None:
         if spec.composition.loop is not None:
             found.append("composition.loop")
@@ -369,6 +410,13 @@ def _check_music(spec: SoundSpec) -> None:
             "the existing voices are unchanged.",
             field="voices",
         )
+    for index, voice in enumerate(spec.voices):
+        if voice.key is not None and voice.glide is not None:
+            raise invalid_spec(
+                f"voices[{index}].glide: a keyed voice plays its own pitch on every hit, so "
+                "it has nothing to glide between. Remove the glide or the key.",
+                field=f"voices[{index}].glide",
+            )
     for index, effect in enumerate(spec.master.effects or []):
         if effect.kind.value not in MASTER_EFFECT_KINDS:
             raise invalid_spec(

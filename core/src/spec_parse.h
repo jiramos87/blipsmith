@@ -53,6 +53,11 @@ enum class FilterType : int {
     Bandpass,
 };
 
+enum class GlideMode : int {
+    Legato = 0,
+    Always,
+};
+
 enum class EffectKind : int {
     Distortion = 0,
     Wavefold,
@@ -103,6 +108,26 @@ struct LoFi {
     int decimation = 1;
 };
 
+// Music mode, expressive notes. Each is read per note, in the music path only.
+struct Touch {
+    double pivot = 0.6;
+    double fmIndex = 0.0;
+    double cutoffOctaves = 0.0;
+    double attackOctaves = 0.0;
+};
+
+struct Glide {
+    double timeMs = 80.0;
+    GlideMode mode = GlideMode::Legato;
+};
+
+struct Vibrato {
+    double delayMs = 250.0;
+    double fadeMs = 300.0;
+    double rateHz = 5.5;
+    double depthCents = 20.0;
+};
+
 // One flat struct per the published contract: each kind reads the parameters
 // that apply to it and ignores the rest.
 struct Effect {
@@ -145,6 +170,13 @@ struct Voice {
     // Music mode: the MIDI note this voice answers to on a kit track; -1 means
     // it plays every note of its track, as in version 1.
     int key = -1;
+    // Music mode: expressive notes, each optional.
+    bool hasTouch = false;
+    Touch touch;
+    bool hasGlide = false;
+    Glide glide;
+    bool hasVibrato = false;
+    Vibrato vibrato;
 };
 
 // One scheduled event. The Python compiler has already expanded painted steps

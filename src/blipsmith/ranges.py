@@ -147,6 +147,30 @@ RANGES: dict[tuple[str, str], NumericRange] = {
     ("Effect", "mixWet"): NumericRange(0, 1, 0.3, "", "wet/dry balance for delay and reverb"),
     ("Effect", "roomSize"): NumericRange(0, 1, 0.5, "", "reverb tail length"),
     ("Effect", "damping"): NumericRange(0, 1, 0.5, "", "reverb high-frequency absorption"),
+    # Touch (music mode): velocity shapes the tone, per note, around a pivot
+    ("Touch", "pivot"): NumericRange(
+        0, 1, 0.6, "", "the velocity that plays the voice exactly as authored"
+    ),
+    ("Touch", "fmIndex"): NumericRange(
+        -24, 24, 0, "", "FM index added per unit of velocity above the pivot"
+    ),
+    ("Touch", "cutoffOctaves"): NumericRange(
+        -8, 8, 0, "oct", "filter cutoff shift per unit of velocity above the pivot"
+    ),
+    ("Touch", "attackOctaves"): NumericRange(
+        -8, 8, 0, "oct", "attack shortening per unit of velocity above the pivot"
+    ),
+    # Glide (music mode): the pitch slides from the previous note
+    ("Glide", "timeMs"): NumericRange(0, 5000, 80, "ms", "time to slide to the note's pitch"),
+    # Vibrato (music mode): a late vibrato that fades in on a held note
+    ("Vibrato", "delayMs"): NumericRange(
+        0, 10_000, 250, "ms", "time from the note's start before the vibrato begins"
+    ),
+    ("Vibrato", "fadeMs"): NumericRange(0, 10_000, 300, "ms", "time to fade in to full depth"),
+    ("Vibrato", "rateHz"): NumericRange(0.1, 20, 5.5, "Hz", "vibrato speed"),
+    ("Vibrato", "depthCents"): NumericRange(
+        0, 200, 20, "cents", "pitch swing either side at full depth"
+    ),
     # Composition
     ("Composition", "tempoBpm"): NumericRange(20, 300, 120, "BPM", "composition tempo"),
     ("Composition", "swing"): NumericRange(0, 0.75, 0, "", "offbeat delay as a fraction of a step"),

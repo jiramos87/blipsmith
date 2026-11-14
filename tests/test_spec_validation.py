@@ -59,6 +59,10 @@ def test_voice_surface_matches_prd() -> None:
         "track",
         # docs/prd/blipsmith-music-mode.md: the kit key, version 2 only.
         "key",
+        # docs/prd/blipsmith-expressive-notes.md: per-note expression, version 2 only.
+        "touch",
+        "glide",
+        "vibrato",
     }
 
 
