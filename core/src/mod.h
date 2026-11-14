@@ -24,6 +24,7 @@
 
 #include <cstdint>
 
+#include "expression.h"
 #include "spec_parse.h"
 
 namespace blipsmith {
@@ -47,7 +48,10 @@ private:
 // One voice's modulation, assembled once and stepped one frame at a time.
 class Modulation {
 public:
-    Modulation(const Voice& voice, double frequencyHz, int sampleRate);
+    // `expression` is one note's glide and late vibrato; empty, the modulation
+    // runs exactly as it did before notes carried any.
+    Modulation(const Voice& voice, double frequencyHz, int sampleRate,
+               const PitchExpression& expression = PitchExpression{});
 
     // Advance every modulator by one frame. Call once per frame, before the
     // accessors below are read.
@@ -77,6 +81,7 @@ public:
 private:
     double pitchOctaves(double envelope) const;
     double cutoffOctaves(double envelope) const;
+    double expressionOctaves(std::uint32_t frame) const;
 
     bool hasModEnv_ = false;
     bool hasLfo_ = false;
@@ -90,6 +95,9 @@ private:
     Fm fm_;
     Am am_;
     ModEnvelope modEnvelope_;
+    PitchExpression expression_;
+    bool hasExpression_ = false;
+    std::uint32_t vibratoPhase_ = 0;
 
     double baseTurns_ = 0.0;
     std::uint32_t baseIncrement_ = 0;

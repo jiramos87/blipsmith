@@ -10,6 +10,7 @@
 #include <cstdint>
 
 #include "env.h"
+#include "expression.h"
 #include "filter.h"
 #include "lofi.h"
 #include "mod.h"
@@ -21,8 +22,9 @@ namespace blipsmith {
 
 template <typename Sink>
 void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, double frequency,
-                     const AmpEnvelope& envelope, std::uint32_t frameCount, Sink&& sink) {
-    Modulation modulation(voice, frequency, spec.sampleRate);
+                     const AmpEnvelope& envelope, const PitchExpression& expression,
+                     std::uint32_t frameCount, Sink&& sink) {
+    Modulation modulation(voice, frequency, spec.sampleRate, expression);
     NoiseSource noise(spec.seed, voiceIndex);
     LoFiStage lofi(voice.lofi);
 
@@ -78,6 +80,14 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
 
         sink(frame, sample);
     }
+}
+
+// A note with no expression: version 1, and a music voice with none set.
+template <typename Sink>
+void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, double frequency,
+                     const AmpEnvelope& envelope, std::uint32_t frameCount, Sink&& sink) {
+    run_voice_chain(spec, voice, voiceIndex, frequency, envelope, PitchExpression{}, frameCount,
+                    static_cast<Sink&&>(sink));
 }
 
 }  // namespace blipsmith

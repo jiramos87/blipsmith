@@ -128,10 +128,22 @@ MusicMix render_music(const Spec& spec, std::uint32_t frames, bool wantStems) {
             if (voice.hasTouch) {
                 touched = voice;
             }
+            // Glide comes from the last note this voice played at an earlier
+            // start: on a chord, its top note, since notes at one start run up
+            // in pitch. Vibrato is the voice's, the same on every note.
+            const PitchExpression vibrato = vibrato_expression(voice, spec.sampleRate);
+            const ScheduledNote* latest = nullptr;
+            const ScheduledNote* previous = nullptr;
             for (const ScheduledNote& note : plan) {
                 if (note.startFrame >= frames || !voice_plays(voice, note.midiNote)) {
                     continue;
                 }
+                if (latest != nullptr && latest->startFrame < note.startFrame) {
+                    previous = latest;
+                }
+                latest = &note;
+                PitchExpression expression = vibrato;
+                add_glide(voice, previous, note, spec.sampleRate, expression);
                 if (voice.hasTouch) {
                     apply_touch(voice, note.velocity, touched);
                 }
@@ -146,7 +158,8 @@ MusicMix render_music(const Spec& spec, std::uint32_t frames, bool wantStems) {
                 const double velocity = note.velocity;
                 double* start = voiceLine.data() + note.startFrame;
                 run_voice_chain(spec, played, static_cast<int>(voiceIndex),
-                                note_frequency(voice, note.midiNote), envelope, count,
+                                note_frequency(voice, note.midiNote), envelope, expression,
+                                count,
                                 [&](std::uint32_t frame, double sample) {
                                     start[frame] += sample * velocity;
                                 });

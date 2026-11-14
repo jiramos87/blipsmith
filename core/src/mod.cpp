@@ -68,7 +68,8 @@ double ModEnvelope::at(std::uint32_t frame) const {
     return remaining * remaining;
 }
 
-Modulation::Modulation(const Voice& voice, double frequencyHz, int sampleRate)
+Modulation::Modulation(const Voice& voice, double frequencyHz, int sampleRate,
+                       const PitchExpression& expression)
     : hasModEnv_(voice.hasModEnv),
       hasLfo_(voice.hasLfo),
       hasFm_(voice.hasFm),
@@ -77,7 +78,9 @@ Modulation::Modulation(const Voice& voice, double frequencyHz, int sampleRate)
       lfo_(voice.lfo),
       fm_(voice.fm),
       am_(voice.am),
-      modEnvelope_(voice.modEnv, sampleRate) {
+      modEnvelope_(voice.modEnv, sampleRate),
+      expression_(expression),
+      hasExpression_(expression.active()) {
     hasPitchModulation_ = (hasModEnv_ && modEnv_.target == ModEnvTarget::Pitch) ||
                           (hasLfo_ && lfo_.target == LfoTarget::Pitch);
     hasCutoffModulation_ = (hasModEnv_ && modEnv_.target == ModEnvTarget::Cutoff) ||
@@ -117,6 +120,25 @@ double Modulation::cutoffOctaves(double envelope) const {
     return octaves;
 }
 
+double Modulation::expressionOctaves(std::uint32_t frame) const {
+    double octaves = 0.0;
+    if (frame < expression_.glideFrames) {
+        octaves += expression_.glideOctaves *
+                   static_cast<double>(expression_.glideFrames - frame) /
+                   static_cast<double>(expression_.glideFrames);
+    }
+    if (expression_.hasVibrato && frame >= expression_.vibratoDelayFrames) {
+        const std::uint32_t since = frame - expression_.vibratoDelayFrames;
+        double depth = expression_.vibratoOctaves;
+        if (since < expression_.vibratoFadeFrames) {
+            depth = depth * static_cast<double>(since) /
+                    static_cast<double>(expression_.vibratoFadeFrames);
+        }
+        octaves += depth * modulator_sample(Waveform::Sine, vibratoPhase_);
+    }
+    return octaves;
+}
+
 void Modulation::step(std::uint32_t frame) {
     const double envelope = hasModEnv_ ? modEnvelope_.at(frame) : 0.0;
 
@@ -124,8 +146,28 @@ void Modulation::step(std::uint32_t frame) {
     // frequency the carrier is actually running at this frame.
     double turns = baseTurns_;
     if (hasPitchModulation_) {
-        turns = baseTurns_ * octave_ratio(pitchOctaves(envelope));
+        double octaves = pitchOctaves(envelope);
+        if (hasExpression_) {
+            octaves += expressionOctaves(frame);
+        }
+        turns = baseTurns_ * octave_ratio(octaves);
         carrierIncrement_ = turns_to_increment(turns);
+    } else if (hasExpression_) {
+        // A note's glide and vibrato on an otherwise steady voice. Where they
+        // add nothing (before the vibrato starts, after the glide lands) the
+        // carrier runs at exactly the increment it has without them.
+        const double octaves = expressionOctaves(frame);
+        if (octaves != 0.0) {
+            turns = baseTurns_ * octave_ratio(octaves);
+            carrierIncrement_ = turns_to_increment(turns);
+        } else {
+            carrierIncrement_ = baseIncrement_;
+        }
+    }
+    // The vibrato's phase starts where the vibrato does, so it fades in from a
+    // zero crossing on every note.
+    if (expression_.hasVibrato && frame >= expression_.vibratoDelayFrames) {
+        vibratoPhase_ += expression_.vibratoIncrement;
     }
 
     if (hasFm_) {
