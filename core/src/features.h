@@ -31,6 +31,10 @@ struct Features {
     double estimatedFundamentalHz = 0.0;
     double spectralCentroidHz = 0.0;
     double attackTimeMs = 0.0;
+    // BS.1770 integrated loudness and 4x-oversampled true peak, per channel
+    // rather than on the mono sum (loudness.h).
+    double integratedLufs = -120.0;
+    double truePeakDbtp = -120.0;
 };
 
 // `interleaved` is the bus output: channel-interleaved samples in [-1, 1].

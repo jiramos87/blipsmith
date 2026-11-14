@@ -27,6 +27,9 @@ FEATURE_KEYS = (
     "estimatedFundamentalHz",
     "spectralCentroidHz",
     "attackTimeMs",
+    # docs/prd/blipsmith-music-mode.md: loudness and true peak, on every render.
+    "integratedLufs",
+    "truePeakDbtp",
 )
 
 FLAT_ENV: dict[str, float] = {
@@ -70,7 +73,7 @@ def tone(waveform: str = "sine", duration_ms: float = 500.0, **overrides: Any) -
     return {"voices": [body], "durationMs": duration_ms}
 
 
-# --- The contract: six keys, always present, never null -----------------------
+# --- The contract: eight keys, always present, never null ---------------------
 
 
 def test_every_pinned_feature_key_is_present() -> None:

@@ -3,6 +3,7 @@
 #include <cmath>
 #include <cstddef>
 
+#include "loudness.h"
 #include "osc.h"
 #include "tables.h"
 
@@ -337,6 +338,8 @@ Features measure(const std::vector<double>& interleaved, int sampleRate, int cha
     features.attackTimeMs = attack_time_ms(mono, peak, sampleRate);
     features.estimatedFundamentalHz = estimate_fundamental_hz(mono, peak, sampleRate);
     features.spectralCentroidHz = spectral_centroid_hz(mono, sampleRate);
+    features.integratedLufs = integrated_lufs(interleaved, sampleRate, channels);
+    features.truePeakDbtp = true_peak_dbtp(interleaved, channels);
     return features;
 }
 

@@ -50,6 +50,7 @@ pybind11_add_module(_core NO_EXTRAS
   core/src/filter.cpp
   core/src/fx.cpp
   core/src/lofi.cpp
+  core/src/loudness.cpp
   core/src/mod.cpp
   core/src/music.cpp
   core/src/noise.cpp

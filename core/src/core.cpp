@@ -33,6 +33,8 @@ py::dict render(const std::string& spec_json, bool stems) {
     features["estimatedFundamentalHz"] = output.features.estimatedFundamentalHz;
     features["spectralCentroidHz"] = output.features.spectralCentroidHz;
     features["attackTimeMs"] = output.features.attackTimeMs;
+    features["integratedLufs"] = output.features.integratedLufs;
+    features["truePeakDbtp"] = output.features.truePeakDbtp;
 
     py::dict result;
     result["wav"] = py::bytes(output.wav);

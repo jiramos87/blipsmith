@@ -200,6 +200,8 @@ def test_a_preset_edited_and_rendered_comes_back_with_feedback(tmp_path: Path) -
             "estimatedFundamentalHz",
             "spectralCentroidHz",
             "attackTimeMs",
+            "integratedLufs",
+            "truePeakDbtp",
         }
         assert all(value is not None for value in result["features"].values())
 
