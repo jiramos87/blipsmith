@@ -57,6 +57,7 @@ pybind11_add_module(_core NO_EXTRAS
   core/src/music.cpp
   core/src/noise.cpp
   core/src/osc.cpp
+  core/src/pluck.cpp
   core/src/render.cpp
   core/src/seq.cpp
   core/src/spec_parse.cpp

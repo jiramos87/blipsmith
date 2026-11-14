@@ -18,6 +18,7 @@
 #include "mod.h"
 #include "noise.h"
 #include "osc.h"
+#include "pluck.h"
 #include "spec_parse.h"
 
 namespace blipsmith {
@@ -33,6 +34,11 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
     std::optional<FourOperator> operators;
     if (voice.hasFm4) {
         operators.emplace(voice.fm4, spec.sampleRate);
+    }
+    // So does a string; its line is filled on the note's first frame.
+    std::optional<PluckedString> string;
+    if (voice.hasString) {
+        string.emplace(voice.string, spec.sampleRate);
     }
 
     // A static cutoff needs its coefficients worked out once. A modulated one is
@@ -62,6 +68,10 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
             default:
                 if (operators) {
                     sample = operators->sample(frame, modulation.carrierTurns());
+                    break;
+                }
+                if (string) {
+                    sample = string->sample(modulation.carrierTurns(), noise);
                     break;
                 }
                 sample = oscillator_sample(voice.waveform, phase + modulation.fmPhaseOffset(),

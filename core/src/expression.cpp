@@ -3,6 +3,7 @@
 #include "env.h"
 #include "fm4.h"
 #include "osc.h"
+#include "pluck.h"
 #include "tables.h"
 
 namespace blipsmith {
@@ -57,6 +58,16 @@ void apply_touch(const Voice& voice, double velocity, Voice& out) {
             }
             out.fm4.operators[i].level = touched;
         }
+    }
+    // On a string the same octaves move the pluck's or hammer's corner.
+    if (voice.hasString && touch.cutoffOctaves != 0.0) {
+        double brightness = voice.string.brightness + touch.cutoffOctaves * t / kStringBrightnessOctaves;
+        if (brightness < 0.0) {
+            brightness = 0.0;
+        } else if (brightness > 1.0) {
+            brightness = 1.0;
+        }
+        out.string.brightness = brightness;
     }
     // The ceiling below Nyquist is the filter's own, applied where it designs.
     if (voice.hasFilter && touch.cutoffOctaves != 0.0) {
