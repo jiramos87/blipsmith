@@ -1,0 +1,130 @@
+{
+  "version": 2,
+  "seed": 21,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-loop-wrap",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Music mode: a loop whose last chord and echoes run past the end and wrap onto the start."
+  },
+  "voices": [
+    {
+      "waveform": "saw",
+      "track": 0,
+      "ampEnv": {
+        "attackMs": 80,
+        "decayMs": 300,
+        "sustainLevel": 0.5,
+        "releaseMs": 900
+      },
+      "mixDb": -6.0,
+      "filter": {
+        "type": "lowpass",
+        "cutoffHz": 1500.0,
+        "resonance": 0.8
+      }
+    },
+    {
+      "waveform": "pulse",
+      "pulseDuty": 0.3,
+      "track": 1,
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 160,
+        "sustainLevel": 0,
+        "releaseMs": 80
+      },
+      "mixDb": -8.0,
+      "effects": [
+        {
+          "kind": "delay",
+          "timeMs": 375.0,
+          "feedback": 0.55,
+          "mixWet": 0.45
+        }
+      ]
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120.0,
+    "tracks": [
+      {
+        "name": "pad",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 57,
+            "durationBeats": 1.8,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 60,
+            "durationBeats": 1.8,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 64,
+            "durationBeats": 1.8,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 55,
+            "durationBeats": 2.0,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 59,
+            "durationBeats": 2.0,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 62,
+            "durationBeats": 2.0,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "name": "pluck",
+        "pan": -0.4,
+        "notes": [
+          {
+            "startBeat": 0.5,
+            "midiNote": 72,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 74,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2.5,
+            "midiNote": 76,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3.5,
+            "midiNote": 79,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          }
+        ]
+      }
+    ],
+    "loop": true
+  }
+}

@@ -1,0 +1,187 @@
+{
+  "version": 2,
+  "seed": 21,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-kit",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Music mode: a five-voice kit on one track, each voice answering to its own key."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fundamentalHz": 55.0,
+      "key": 36,
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 180,
+        "sustainLevel": 0,
+        "releaseMs": 30
+      },
+      "modEnv": {
+        "target": "pitch",
+        "amount": 0.6,
+        "attackMs": 0,
+        "decayMs": 40
+      },
+      "track": 0
+    },
+    {
+      "waveform": "noise_white",
+      "key": 38,
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 130,
+        "sustainLevel": 0,
+        "releaseMs": 40
+      },
+      "filter": {
+        "type": "highpass",
+        "cutoffHz": 1200.0,
+        "resonance": 0.7
+      },
+      "mixDb": -4.0,
+      "track": 0
+    },
+    {
+      "waveform": "triangle",
+      "fundamentalHz": 190.0,
+      "key": 38,
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 70,
+        "sustainLevel": 0,
+        "releaseMs": 20
+      },
+      "mixDb": -8.0,
+      "track": 0
+    },
+    {
+      "waveform": "noise_white",
+      "key": 42,
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 35,
+        "sustainLevel": 0,
+        "releaseMs": 10
+      },
+      "filter": {
+        "type": "highpass",
+        "cutoffHz": 7000.0,
+        "resonance": 0.7
+      },
+      "mixDb": -10.0,
+      "track": 0
+    },
+    {
+      "waveform": "noise_pink",
+      "key": 46,
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 260,
+        "sustainLevel": 0,
+        "releaseMs": 80
+      },
+      "filter": {
+        "type": "highpass",
+        "cutoffHz": 5000.0,
+        "resonance": 0.7
+      },
+      "mixDb": -12.0,
+      "track": 0
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120.0,
+    "tracks": [
+      {
+        "name": "kit",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 36,
+            "durationBeats": 0.25,
+            "velocity": 1.0
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 36,
+            "durationBeats": 0.25,
+            "velocity": 0.9
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 38,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3,
+            "midiNote": 38,
+            "durationBeats": 0.25,
+            "velocity": 0.9
+          },
+          {
+            "startBeat": 0.0,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 1.0,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 2.0,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 2.5,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 3.0,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 3.5,
+            "midiNote": 46,
+            "durationBeats": 0.4,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 40,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          }
+        ]
+      }
+    ]
+  }
+}

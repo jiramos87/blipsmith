@@ -1,0 +1,138 @@
+{
+  "version": 2,
+  "seed": 21,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-track-room",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Music mode: a short lead through its track's reverb, ringing past every note."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fundamentalHz": 55.0,
+      "key": 36,
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 180,
+        "sustainLevel": 0,
+        "releaseMs": 30
+      },
+      "modEnv": {
+        "target": "pitch",
+        "amount": 0.6,
+        "attackMs": 0,
+        "decayMs": 40
+      },
+      "track": 0
+    },
+    {
+      "waveform": "square",
+      "track": 1,
+      "ampEnv": {
+        "attackMs": 4,
+        "decayMs": 120,
+        "sustainLevel": 0.4,
+        "releaseMs": 60
+      },
+      "mixDb": -6.0,
+      "filter": {
+        "type": "lowpass",
+        "cutoffHz": 2400.0,
+        "resonance": 1.0
+      }
+    },
+    {
+      "waveform": "triangle",
+      "track": 2,
+      "ampEnv": {
+        "attackMs": 5,
+        "decayMs": 200,
+        "sustainLevel": 0.6,
+        "releaseMs": 50
+      }
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120.0,
+    "tracks": [
+      {
+        "name": "kick",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 36,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 36,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "name": "lead",
+        "pan": 0.3,
+        "effects": [
+          {
+            "kind": "reverb",
+            "roomSize": 0.85,
+            "damping": 0.4,
+            "mixWet": 0.5
+          }
+        ],
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 72,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 76,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 79,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 84,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "name": "bass",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 36,
+            "durationBeats": 1.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 43,
+            "durationBeats": 1.5,
+            "velocity": 0.8
+          }
+        ]
+      }
+    ]
+  }
+}

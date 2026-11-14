@@ -1,0 +1,389 @@
+{
+  "version": 2,
+  "seed": 21,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-nine-tracks",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Music mode: nine tracks of painted steps with swing, some voices echoing past their notes."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "track": 0,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": -0.8,
+      "effects": [
+        {
+          "kind": "delay",
+          "timeMs": 180.0,
+          "feedback": 0.3,
+          "mixWet": 0.3
+        }
+      ]
+    },
+    {
+      "waveform": "square",
+      "track": 1,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": -0.6
+    },
+    {
+      "waveform": "triangle",
+      "track": 2,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": -0.4
+    },
+    {
+      "waveform": "saw",
+      "track": 3,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": -0.2,
+      "effects": [
+        {
+          "kind": "delay",
+          "timeMs": 240.0,
+          "feedback": 0.3,
+          "mixWet": 0.3
+        }
+      ]
+    },
+    {
+      "waveform": "pulse",
+      "track": 4,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": 0.0
+    },
+    {
+      "waveform": "sine",
+      "track": 5,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": 0.2
+    },
+    {
+      "waveform": "triangle",
+      "track": 6,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": 0.4,
+      "effects": [
+        {
+          "kind": "delay",
+          "timeMs": 300.0,
+          "feedback": 0.3,
+          "mixWet": 0.3
+        }
+      ]
+    },
+    {
+      "waveform": "square",
+      "track": 7,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": 0.6
+    },
+    {
+      "waveform": "saw",
+      "track": 8,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 150,
+        "sustainLevel": 0.3,
+        "releaseMs": 80
+      },
+      "mixDb": -10.0,
+      "pan": 0.8
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120.0,
+    "tracks": [
+      {
+        "name": "part 1",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 0,
+            "midiNote": 48,
+            "velocity": 0.7
+          },
+          {
+            "index": 3,
+            "midiNote": 52,
+            "velocity": 0.7
+          },
+          {
+            "index": 6,
+            "midiNote": 56,
+            "velocity": 0.7
+          },
+          {
+            "index": 9,
+            "midiNote": 48,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "part 2",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 1,
+            "midiNote": 51,
+            "velocity": 0.7
+          },
+          {
+            "index": 4,
+            "midiNote": 55,
+            "velocity": 0.7
+          },
+          {
+            "index": 7,
+            "midiNote": 59,
+            "velocity": 0.7
+          },
+          {
+            "index": 10,
+            "midiNote": 51,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "part 3",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 2,
+            "midiNote": 54,
+            "velocity": 0.7
+          },
+          {
+            "index": 5,
+            "midiNote": 58,
+            "velocity": 0.7
+          },
+          {
+            "index": 8,
+            "midiNote": 62,
+            "velocity": 0.7
+          },
+          {
+            "index": 11,
+            "midiNote": 54,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "part 4",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 3,
+            "midiNote": 57,
+            "velocity": 0.7
+          },
+          {
+            "index": 6,
+            "midiNote": 61,
+            "velocity": 0.7
+          },
+          {
+            "index": 9,
+            "midiNote": 65,
+            "velocity": 0.7
+          },
+          {
+            "index": 12,
+            "midiNote": 57,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "part 5",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 4,
+            "midiNote": 60,
+            "velocity": 0.7
+          },
+          {
+            "index": 7,
+            "midiNote": 64,
+            "velocity": 0.7
+          },
+          {
+            "index": 10,
+            "midiNote": 68,
+            "velocity": 0.7
+          },
+          {
+            "index": 13,
+            "midiNote": 60,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "part 6",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 5,
+            "midiNote": 63,
+            "velocity": 0.7
+          },
+          {
+            "index": 8,
+            "midiNote": 67,
+            "velocity": 0.7
+          },
+          {
+            "index": 11,
+            "midiNote": 71,
+            "velocity": 0.7
+          },
+          {
+            "index": 14,
+            "midiNote": 63,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "part 7",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 6,
+            "midiNote": 66,
+            "velocity": 0.7
+          },
+          {
+            "index": 9,
+            "midiNote": 70,
+            "velocity": 0.7
+          },
+          {
+            "index": 12,
+            "midiNote": 74,
+            "velocity": 0.7
+          },
+          {
+            "index": 15,
+            "midiNote": 66,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "part 8",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 7,
+            "midiNote": 69,
+            "velocity": 0.7
+          },
+          {
+            "index": 10,
+            "midiNote": 73,
+            "velocity": 0.7
+          },
+          {
+            "index": 13,
+            "midiNote": 77,
+            "velocity": 0.7
+          },
+          {
+            "index": 0,
+            "midiNote": 69,
+            "velocity": 0.7
+          }
+        ]
+      },
+      {
+        "name": "part 9",
+        "stepsPerBeat": 4,
+        "steps": [
+          {
+            "index": 8,
+            "midiNote": 72,
+            "velocity": 0.7
+          },
+          {
+            "index": 11,
+            "midiNote": 76,
+            "velocity": 0.7
+          },
+          {
+            "index": 14,
+            "midiNote": 80,
+            "velocity": 0.7
+          },
+          {
+            "index": 1,
+            "midiNote": 72,
+            "velocity": 0.7
+          }
+        ]
+      }
+    ],
+    "swing": 0.25
+  }
+}

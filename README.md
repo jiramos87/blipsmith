@@ -221,7 +221,7 @@ That invariant is enforced, not just intended:
   `sin()` and asserts the check rejects it, so the gate is known to be able to
   fail.
 - `-ffp-contract=off`, no fast-math, C++17, pinned in `CMakeLists.txt`.
-- 35 golden specs cover every waveform, every processing stage and every preset
+- 40 golden specs cover every waveform, every processing stage and every preset
   archetype. Each one asserts its recorded hash, non-clipping output, and a peak
   at the normalization target.
 - CI renders that corpus on Linux x86_64 and macOS arm64 and diffs the hash

@@ -1,0 +1,227 @@
+{
+  "version": 2,
+  "seed": 21,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-master-room",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Music mode: four tracks spread across the image sharing one master echo and room."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fundamentalHz": 55.0,
+      "key": 36,
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 180,
+        "sustainLevel": 0,
+        "releaseMs": 30
+      },
+      "modEnv": {
+        "target": "pitch",
+        "amount": 0.6,
+        "attackMs": 0,
+        "decayMs": 40
+      },
+      "track": 0
+    },
+    {
+      "waveform": "sine",
+      "track": 1,
+      "fm": {
+        "ratio": 1.0,
+        "index": 1.2
+      },
+      "ampEnv": {
+        "attackMs": 3,
+        "decayMs": 700,
+        "sustainLevel": 0.2,
+        "releaseMs": 300
+      },
+      "mixDb": -6.0
+    },
+    {
+      "waveform": "triangle",
+      "track": 2,
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 400,
+        "sustainLevel": 0,
+        "releaseMs": 300
+      },
+      "mixDb": -9.0
+    },
+    {
+      "waveform": "noise_white",
+      "key": 42,
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 35,
+        "sustainLevel": 0,
+        "releaseMs": 10
+      },
+      "filter": {
+        "type": "highpass",
+        "cutoffHz": 7000.0,
+        "resonance": 0.7
+      },
+      "mixDb": -10.0,
+      "track": 3
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120.0,
+    "tracks": [
+      {
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 36,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 36,
+            "durationBeats": 0.25,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "pan": -0.5,
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 60,
+            "durationBeats": 1,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 64,
+            "durationBeats": 1,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 67,
+            "durationBeats": 1,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 62,
+            "durationBeats": 1,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 65,
+            "durationBeats": 1,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 69,
+            "durationBeats": 1,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "pan": 0.5,
+        "notes": [
+          {
+            "startBeat": 1,
+            "midiNote": 84,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3,
+            "midiNote": 88,
+            "durationBeats": 0.5,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "pan": 0.2,
+        "notes": [
+          {
+            "startBeat": 0.0,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 1.0,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 2.0,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 2.5,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 3.0,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.5
+          },
+          {
+            "startBeat": 3.5,
+            "midiNote": 42,
+            "durationBeats": 0.1,
+            "velocity": 0.5
+          }
+        ]
+      }
+    ],
+    "loop": true
+  },
+  "master": {
+    "effects": [
+      {
+        "kind": "delay",
+        "timeMs": 250.0,
+        "feedback": 0.3,
+        "mixWet": 0.2
+      },
+      {
+        "kind": "reverb",
+        "roomSize": 0.6,
+        "damping": 0.5,
+        "mixWet": 0.25
+      }
+    ]
+  }
+}

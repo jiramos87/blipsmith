@@ -142,6 +142,19 @@ STAGE_PROBES: dict[str, Callable[[SoundSpec], bool]] = {
     ),
     "composition: swing": lambda spec: spec.composition is not None and spec.composition.swing > 0,
     "stereo output": lambda spec: int(spec.channels) == 2,
+    # docs/prd/blipsmith-music-mode.md
+    "music: more than five tracks": lambda spec: (
+        spec.is_music and spec.composition is not None and len(spec.composition.tracks) > 5
+    ),
+    "music: a kit on one track": lambda spec: _has_voice(spec, lambda v: v.key is not None),
+    "music: a voice effect ringing past its notes": lambda spec: (
+        spec.is_music and _has_voice(spec, lambda v: bool(v.effects))
+    ),
+    "music: a track effect": lambda spec: (
+        spec.composition is not None and any(t.effects for t in spec.composition.tracks)
+    ),
+    "music: a master room": lambda spec: bool(spec.master.effects),
+    "music: the loop": lambda spec: spec.composition is not None and bool(spec.composition.loop),
 }
 
 
