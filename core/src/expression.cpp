@@ -1,6 +1,7 @@
 #include "expression.h"
 
 #include "env.h"
+#include "fm4.h"
 #include "osc.h"
 #include "tables.h"
 
@@ -9,6 +10,10 @@ namespace {
 
 // The published bounds of the fields touch moves.
 constexpr double kMaxFmIndex = 24.0;
+// A four-operator modulator at level 1 is 4 pi radians deep, so a level is a
+// depth in radians times this, and the index bound is this level.
+constexpr double kLevelPerRadian = 0.0795774715459476678844418816862571;
+constexpr double kMaxModulatorLevel = kMaxFmIndex * kLevelPerRadian;
 constexpr double kMinCutoffHz = 20.0;
 constexpr double kMaxAttackMs = 10000.0;
 
@@ -29,6 +34,29 @@ void apply_touch(const Voice& voice, double velocity, Voice& out) {
             index = kMaxFmIndex;
         }
         out.fm.index = index;
+    }
+    // On four operators the index moves every modulator in proportion to its
+    // level: one at level 0 stays silent, and the carriers are left alone, since
+    // level already follows velocity.
+    if (voice.hasFm4 && touch.fmIndex != 0.0) {
+        const Fm4Algorithm& algorithm = fm4_algorithm(voice.fm4.algorithm);
+        std::uint8_t modulators = 0;
+        for (int i = 0; i < kFm4Operators; ++i) {
+            modulators |= algorithm.modulators[i];
+        }
+        for (int i = 0; i < kFm4Operators; ++i) {
+            if (((modulators >> i) & 1U) == 0) {
+                continue;
+            }
+            const double level = voice.fm4.operators[i].level;
+            double touched = level + touch.fmIndex * t * level * kLevelPerRadian;
+            if (touched < 0.0) {
+                touched = 0.0;
+            } else if (touched > kMaxModulatorLevel) {
+                touched = kMaxModulatorLevel;
+            }
+            out.fm4.operators[i].level = touched;
+        }
     }
     // The ceiling below Nyquist is the filter's own, applied where it designs.
     if (voice.hasFilter && touch.cutoffOctaves != 0.0) {

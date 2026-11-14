@@ -49,6 +49,7 @@ pybind11_add_module(_core NO_EXTRAS
   core/src/expression.cpp
   core/src/features.cpp
   core/src/filter.cpp
+  core/src/fm4.cpp
   core/src/fx.cpp
   core/src/lofi.cpp
   core/src/loudness.cpp

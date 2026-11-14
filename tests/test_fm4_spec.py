@@ -8,6 +8,8 @@ so it cannot sit beside the two-operator `fm` or on a waveform other than sine.
 from __future__ import annotations
 
 import json
+import re
+from pathlib import Path
 from typing import Any
 
 import pytest
@@ -160,3 +162,18 @@ def test_every_modulator_comes_before_what_it_feeds(algorithm: int) -> None:
     # Every operator is heard or feeds something that is.
     used = set(carriers) | {source for feeds in routing for source in feeds}
     assert used == {1, 2, 3, 4}
+
+
+def test_the_core_holds_the_same_algorithm_table() -> None:
+    source = (Path(__file__).parent.parent / "core" / "src" / "fm4.cpp").read_text()
+    rows = re.findall(
+        r"\{\{(0x[0-9A-F]), (0x[0-9A-F]), (0x[0-9A-F]), (0x[0-9A-F])\}, (0x[0-9A-F])\}", source
+    )
+    assert len(rows) == len(FM4_ALGORITHMS)
+
+    def bits(operators: tuple[int, ...]) -> int:
+        return sum(1 << (number - 1) for number in operators)
+
+    for row, (routing, carriers) in zip(rows, FM4_ALGORITHMS, strict=True):
+        assert [int(cell, 16) for cell in row[:4]] == [bits(feeds) for feeds in routing]
+        assert int(row[4], 16) == bits(carriers)

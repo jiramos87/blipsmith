@@ -8,10 +8,12 @@
 #pragma once
 
 #include <cstdint>
+#include <optional>
 
 #include "env.h"
 #include "expression.h"
 #include "filter.h"
+#include "fm4.h"
 #include "lofi.h"
 #include "mod.h"
 #include "noise.h"
@@ -27,6 +29,11 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
     Modulation modulation(voice, frequency, spec.sampleRate, expression);
     NoiseSource noise(spec.seed, voiceIndex);
     LoFiStage lofi(voice.lofi);
+    // Four-operator FM replaces the oscillator; its phases start on the note.
+    std::optional<FourOperator> operators;
+    if (voice.hasFm4) {
+        operators.emplace(voice.fm4, spec.sampleRate);
+    }
 
     // A static cutoff needs its coefficients worked out once. A modulated one is
     // recomputed every frame, below.
@@ -53,6 +60,10 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
                 sample = noise.pink();
                 break;
             default:
+                if (operators) {
+                    sample = operators->sample(frame, modulation.carrierTurns());
+                    break;
+                }
                 sample = oscillator_sample(voice.waveform, phase + modulation.fmPhaseOffset(),
                                            voice.pulseDuty);
                 phase += modulation.carrierIncrement();

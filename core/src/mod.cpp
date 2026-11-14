@@ -164,6 +164,7 @@ void Modulation::step(std::uint32_t frame) {
             carrierIncrement_ = baseIncrement_;
         }
     }
+    carrierTurns_ = turns;
     // The vibrato's phase starts where the vibrato does, so it fades in from a
     // zero crossing on every note.
     if (expression_.hasVibrato && frame >= expression_.vibratoDelayFrames) {

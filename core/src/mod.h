@@ -60,6 +60,10 @@ public:
     // The carrier's phase increment for this frame, after pitch modulation.
     std::uint32_t carrierIncrement() const { return carrierIncrement_; }
 
+    // The carrier's pitch this frame in turns per sample, after pitch
+    // modulation: what four-operator FM tunes its operators from.
+    double carrierTurns() const { return carrierTurns_; }
+
     // FM: what to add to the carrier phase for this frame's sample.
     std::uint32_t fmPhaseOffset() const { return fmPhaseOffset_; }
 
@@ -109,6 +113,7 @@ private:
     std::uint32_t fmPhase_ = 0;
 
     std::uint32_t carrierIncrement_ = 0;
+    double carrierTurns_ = 0.0;
     std::uint32_t fmPhaseOffset_ = 0;
     double amGain_ = 1.0;
     double tremoloGain_ = 1.0;
