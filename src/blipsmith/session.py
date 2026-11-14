@@ -30,7 +30,7 @@ from enum import Enum
 from typing import Any
 
 from blipsmith.presets import load_preset as read_preset
-from blipsmith.ranges import MUSIC_SPEC_VERSION, TRACK_COUNT
+from blipsmith.ranges import FM4_OPERATORS, MUSIC_SPEC_VERSION, TRACK_COUNT
 from blipsmith.result import SpecWarning, invalid_spec
 from blipsmith.spec import (
     AmMode,
@@ -399,6 +399,62 @@ class Session:
         self, timeMs: float | None = None, mode: str | None = None, clear: bool = False
     ) -> list[SpecWarning]:
         return self._expression_block("glide", "glide", clear, {"timeMs": timeMs, "mode": mode})
+
+    def set_fm4(
+        self,
+        algorithm: int | None = None,
+        feedback: float | None = None,
+        clear: bool = False,
+    ) -> list[SpecWarning]:
+        return self._expression_block(
+            "fm4", "four-operator FM", clear, {"algorithm": algorithm, "feedback": feedback}
+        )
+
+    def set_operator(
+        self,
+        operator: int,
+        ratio: float | None = None,
+        fixedHz: float | None = None,
+        followPitch: bool = False,
+        detuneCents: float | None = None,
+        level: float | None = None,
+        attackMs: float | None = None,
+        decayMs: float | None = None,
+        sustainLevel: float | None = None,
+    ) -> list[SpecWarning]:
+        """Patch one of the four operators (numbered 1 to 4), starting the fm4
+        block from its defaults if the voice has none. `followPitch` drops a
+        fixed frequency so the operator follows the voice's pitch again."""
+
+        def mutate(data: SpecData) -> None:
+            self._music(data, "four-operator FM")
+            if not 1 <= operator <= FM4_OPERATORS:
+                raise invalid_spec(
+                    f"operator {operator} does not exist; the operators are numbered 1 to "
+                    f"{FM4_OPERATORS}.",
+                    field="fm4.operators",
+                )
+            voice = self._voice(data)
+            fm4 = voice.get("fm4") or {}
+            operators = fm4.get("operators") or [{} for _ in range(FM4_OPERATORS)]
+            patched = {
+                **operators[operator - 1],
+                **_given(
+                    ratio=ratio,
+                    fixedHz=fixedHz,
+                    detuneCents=detuneCents,
+                    level=level,
+                    attackMs=attackMs,
+                    decayMs=decayMs,
+                    sustainLevel=sustainLevel,
+                ),
+            }
+            if followPitch:
+                patched.pop("fixedHz", None)
+            operators[operator - 1] = patched
+            voice["fm4"] = {**fm4, "operators": operators}
+
+        return self._apply(mutate)
 
     def set_vibrato(
         self,

@@ -1,0 +1,134 @@
+{
+  "version": 2,
+  "seed": 43,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-fm4-carriers",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Four-operator FM, many carriers: algorithm 5 (one modulator into three detuned carriers) and algorithm 7 (four carriers, one at a fixed frequency, a bell)."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fm4": {
+        "algorithm": 5,
+        "operators": [
+          {
+            "ratio": 1,
+            "level": 0.18
+          },
+          {
+            "ratio": 1,
+            "level": 0.7,
+            "detuneCents": -7
+          },
+          {
+            "ratio": 1,
+            "level": 0.7,
+            "detuneCents": 7
+          },
+          {
+            "ratio": 2,
+            "level": 0.4
+          }
+        ]
+      },
+      "ampEnv": {
+        "attackMs": 120,
+        "decayMs": 300,
+        "sustainLevel": 0.8,
+        "releaseMs": 400
+      },
+      "track": 0
+    },
+    {
+      "waveform": "sine",
+      "fm4": {
+        "algorithm": 7,
+        "operators": [
+          {
+            "ratio": 1,
+            "level": 0.8
+          },
+          {
+            "ratio": 2.76,
+            "level": 0.5,
+            "decayMs": 600,
+            "sustainLevel": 0
+          },
+          {
+            "ratio": 5.4,
+            "level": 0.3,
+            "decayMs": 300,
+            "sustainLevel": 0
+          },
+          {
+            "fixedHz": 2400,
+            "level": 0.2,
+            "decayMs": 80,
+            "sustainLevel": 0
+          }
+        ]
+      },
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 1200,
+        "sustainLevel": 0,
+        "releaseMs": 300
+      },
+      "track": 1
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "pad",
+        "pan": -0.3,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 3.5,
+            "midiNote": 57,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 0,
+            "durationBeats": 3.5,
+            "midiNote": 64,
+            "velocity": 0.5
+          }
+        ]
+      },
+      {
+        "name": "bell",
+        "pan": 0.3,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 0.5,
+            "midiNote": 76,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "durationBeats": 0.5,
+            "midiNote": 79,
+            "velocity": 0.7
+          },
+          {
+            "startBeat": 2,
+            "durationBeats": 1,
+            "midiNote": 74,
+            "velocity": 0.9
+          }
+        ]
+      }
+    ]
+  }
+}

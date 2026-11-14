@@ -1,0 +1,166 @@
+{
+  "version": 2,
+  "seed": 44,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-fm4-feedback",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Four-operator FM, feedback: algorithm 1 with operator 1 fed back at 0.7, and algorithm 3 at the loudest legal feedback, 1."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fm4": {
+        "algorithm": 1,
+        "operators": [
+          {
+            "ratio": 1,
+            "level": 0.2
+          },
+          {
+            "ratio": 3,
+            "level": 0.1
+          },
+          {
+            "ratio": 1,
+            "level": 0.2,
+            "decayMs": 400,
+            "sustainLevel": 0.5
+          },
+          {
+            "ratio": 1,
+            "level": 0.9
+          }
+        ],
+        "feedback": 0.7
+      },
+      "ampEnv": {
+        "attackMs": 4,
+        "decayMs": 400,
+        "sustainLevel": 0.5,
+        "releaseMs": 200
+      },
+      "track": 0
+    },
+    {
+      "waveform": "sine",
+      "fm4": {
+        "algorithm": 3,
+        "operators": [
+          {
+            "ratio": 1,
+            "level": 0.3
+          },
+          {
+            "ratio": 1,
+            "level": 0.8
+          },
+          {
+            "ratio": 0.5,
+            "level": 0.15
+          },
+          {
+            "ratio": 1,
+            "level": 0.9
+          }
+        ],
+        "feedback": 1.0
+      },
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 200,
+        "sustainLevel": 0.4,
+        "releaseMs": 100
+      },
+      "track": 1
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "growl",
+        "pan": -0.2,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 1,
+            "midiNote": 45,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "durationBeats": 1,
+            "midiNote": 48,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "durationBeats": 1.5,
+            "midiNote": 43,
+            "velocity": 0.8
+          }
+        ]
+      },
+      {
+        "name": "buzz",
+        "pan": 0.2,
+        "notes": [
+          {
+            "startBeat": 0.0,
+            "durationBeats": 0.35,
+            "midiNote": 57,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0.5,
+            "durationBeats": 0.35,
+            "midiNote": 60,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.0,
+            "durationBeats": 0.35,
+            "midiNote": 64,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.5,
+            "durationBeats": 0.35,
+            "midiNote": 60,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2.0,
+            "durationBeats": 0.35,
+            "midiNote": 57,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2.5,
+            "durationBeats": 0.35,
+            "midiNote": 55,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3.0,
+            "durationBeats": 0.35,
+            "midiNote": 57,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3.5,
+            "durationBeats": 0.35,
+            "midiNote": 60,
+            "velocity": 0.8
+          }
+        ]
+      }
+    ]
+  }
+}

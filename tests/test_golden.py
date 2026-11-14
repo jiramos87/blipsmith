@@ -95,6 +95,16 @@ def _has_voice(spec: SoundSpec, test: Callable[[Any], bool]) -> bool:
     return any(test(voice) for voice in spec.voices)
 
 
+def _has_fm4_algorithms(*numbers: int) -> Callable[[SoundSpec], bool]:
+    """A probe for a spec holding a four-operator voice on each of `numbers`."""
+
+    def probe(spec: SoundSpec) -> bool:
+        algorithms = {v.fm4.algorithm for v in spec.voices if v.fm4 is not None}
+        return set(numbers) <= algorithms
+
+    return probe
+
+
 def _has_effect(spec: SoundSpec, kind: str) -> bool:
     return _has_voice(spec, lambda v: any(effect.kind == kind for effect in v.effects))
 
@@ -171,6 +181,27 @@ STAGE_PROBES: dict[str, Callable[[SoundSpec], bool]] = {
     "expressive: late vibrato": lambda spec: _has_voice(spec, lambda v: v.vibrato is not None),
     "expressive: vibrato beside an LFO on pitch": lambda spec: _has_voice(
         spec, lambda v: v.vibrato is not None and v.lfo is not None and v.lfo.target == "pitch"
+    ),
+    # docs/prd/blipsmith-fm4.md
+    # Two algorithms per golden, so four probes cover all eight.
+    **{
+        f"fm4: algorithms {first} and {second}": _has_fm4_algorithms(first, second)
+        for first, second in ((0, 2), (1, 3), (4, 6), (5, 7))
+    },
+    "fm4: feedback": lambda spec: _has_voice(
+        spec, lambda v: v.fm4 is not None and v.fm4.feedback > 0
+    ),
+    "fm4: a fixed-frequency operator": lambda spec: _has_voice(
+        spec, lambda v: v.fm4 is not None and any(o.fixedHz is not None for o in v.fm4.operators)
+    ),
+    "fm4: a detuned operator": lambda spec: _has_voice(
+        spec, lambda v: v.fm4 is not None and any(o.detuneCents != 0 for o in v.fm4.operators)
+    ),
+    "fm4: touch on the modulators": lambda spec: _has_voice(
+        spec, lambda v: v.fm4 is not None and v.touch is not None and v.touch.fmIndex != 0
+    ),
+    "fm4: operators following a glide and a vibrato": lambda spec: _has_voice(
+        spec, lambda v: v.fm4 is not None and v.glide is not None and v.vibrato is not None
     ),
 }
 

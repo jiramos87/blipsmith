@@ -1,0 +1,170 @@
+{
+  "version": 2,
+  "seed": 41,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-fm4-stack",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Four-operator FM, stacks: algorithm 0 (one stack, a brass stab) and algorithm 2 (a stack and a lone modulator into one carrier)."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fm4": {
+        "algorithm": 0,
+        "operators": [
+          {
+            "ratio": 1,
+            "level": 0.15,
+            "attackMs": 30
+          },
+          {
+            "ratio": 1,
+            "level": 0.2,
+            "attackMs": 40,
+            "decayMs": 300,
+            "sustainLevel": 0.6
+          },
+          {
+            "ratio": 2,
+            "level": 0.18,
+            "decayMs": 200,
+            "sustainLevel": 0.4
+          },
+          {
+            "ratio": 1,
+            "level": 0.9
+          }
+        ]
+      },
+      "ampEnv": {
+        "attackMs": 4,
+        "decayMs": 400,
+        "sustainLevel": 0.5,
+        "releaseMs": 200
+      },
+      "track": 0
+    },
+    {
+      "waveform": "sine",
+      "fm4": {
+        "algorithm": 2,
+        "operators": [
+          {
+            "ratio": 3,
+            "level": 0.12
+          },
+          {
+            "ratio": 0.5,
+            "level": 0.25,
+            "decayMs": 150,
+            "sustainLevel": 0.1
+          },
+          {
+            "ratio": 1,
+            "level": 0.2
+          },
+          {
+            "ratio": 1,
+            "level": 0.8
+          }
+        ]
+      },
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 250,
+        "sustainLevel": 0.3,
+        "releaseMs": 120
+      },
+      "track": 1
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "brass",
+        "pan": -0.2,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 0.75,
+            "midiNote": 55,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "durationBeats": 0.75,
+            "midiNote": 58,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2,
+            "durationBeats": 1.5,
+            "midiNote": 62,
+            "velocity": 0.9
+          }
+        ]
+      },
+      {
+        "name": "pluck",
+        "pan": 0.2,
+        "notes": [
+          {
+            "startBeat": 0.0,
+            "durationBeats": 0.4,
+            "midiNote": 43,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 0.5,
+            "durationBeats": 0.4,
+            "midiNote": 50,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.0,
+            "durationBeats": 0.4,
+            "midiNote": 46,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1.5,
+            "durationBeats": 0.4,
+            "midiNote": 50,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2.0,
+            "durationBeats": 0.4,
+            "midiNote": 41,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 2.5,
+            "durationBeats": 0.4,
+            "midiNote": 48,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3.0,
+            "durationBeats": 0.4,
+            "midiNote": 43,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 3.5,
+            "durationBeats": 0.4,
+            "midiNote": 50,
+            "velocity": 0.8
+          }
+        ]
+      }
+    ]
+  }
+}

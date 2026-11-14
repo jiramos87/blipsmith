@@ -9,7 +9,7 @@ drive a physical synth, one typed setter at a time, and a human drives the same
 engine from a terminal. Both paths run the same code and produce the same bytes.
 
 **Same spec, same seed, identical WAV. Every time, on every supported platform.**
-That is the contract the whole design serves, and CI proves it by rendering 43
+That is the contract the whole design serves, and CI proves it by rendering 48
 golden specs on Linux x86_64 and macOS arm64 and comparing SHA-256 sets.
 
 ## Install
@@ -40,7 +40,7 @@ claude mcp add blipsmith -- uv run --project /path/to/blipsmith blipsmith-mcp
 ```
 
 Then ask for a sound. The agent holds one session, shaped like a synth front
-panel: 35 tools, grouped so that one call sets one block of related parameters.
+panel: 37 tools, grouped so that one call sets one block of related parameters.
 
 > **You:** Make me a laser shot, but heavier and dirtier than the stock one.
 
@@ -223,6 +223,30 @@ without them plays exactly as before.
 The MCP verbs are `set_touch`, `set_glide` and `set_vibrato`. The behaviour is
 specified in `docs/prd/blipsmith-expressive-notes.md`.
 
+### Four-operator FM
+
+A music-mode voice can trade its oscillator for four sine operators, the
+architecture behind the classic FM electric pianos, bells, brass and basses. A
+voice without it plays exactly as before, and the two-operator `fm` block is
+unchanged.
+
+- **Operators.** Each runs at `ratio` times the note's pitch (so glide and
+  vibrato move it) or at a `fixedHz`, with a `detuneCents`, a `level` (loudness
+  for a carrier, depth for a modulator: 1 is 4 pi radians) and its own attack,
+  decay and sustain. The voice's amp envelope carries the release.
+- **Algorithms.** `algorithm` 0 to 7 is the classic set: 0 one stack
+  1 > 2 > 3 > 4, 1 (1 + 2) > 3 > 4, 2 (1 + (2 > 3)) > 4, 3 ((1 > 2) + 3) > 4,
+  4 two pairs (1 > 2) + (3 > 4), 5 1 into each of 2, 3 and 4, 6 (1 > 2) + 3 + 4,
+  7 four carriers. The carriers are summed and divided by their count.
+- **Feedback.** Operator 1 can modulate itself by `feedback` (1 is pi radians),
+  through the mean of its last two outputs, which keeps it stable at any
+  setting.
+- **Touch** reaches the modulators: `fmIndex` deepens each in proportion to its
+  level, so a harder note is brighter.
+
+The MCP verbs are `set_fm4` and `set_operator`. The behaviour is specified in
+`docs/prd/blipsmith-fm4.md`.
+
 ## Determinism, and how it is enforced
 
 The audio path uses fixed-point phase accumulators and baked wavetables, with no
@@ -239,7 +263,7 @@ That invariant is enforced, not just intended:
   `sin()` and asserts the check rejects it, so the gate is known to be able to
   fail.
 - `-ffp-contract=off`, no fast-math, C++17, pinned in `CMakeLists.txt`.
-- 43 golden specs cover every waveform, every processing stage and every preset
+- 48 golden specs cover every waveform, every processing stage and every preset
   archetype. Each one asserts its recorded hash, non-clipping output, and a peak
   at the normalization target.
 - CI renders that corpus on Linux x86_64 and macOS arm64 and diffs the hash

@@ -239,6 +239,51 @@ def build_server(session: Session | None = None) -> FastMCP:
         return _guarded(lambda: state.set_glide(timeMs, mode, clear))
 
     @server.tool()
+    def set_fm4(
+        algorithm: int | None = None, feedback: float | None = None, clear: bool = False
+    ) -> dict[str, Any]:
+        """Music mode: four sine operators replace this voice's oscillator (the
+        waveform must be sine, and the voice cannot also have fm). `algorithm`
+        0 to 7 says how they feed each other: 0 one stack 1 > 2 > 3 > 4, 1 (1 +
+        2) > 3 > 4, 2 (1 + (2 > 3)) > 4, 3 ((1 > 2) + 3) > 4, 4 two pairs (1 > 2)
+        + (3 > 4), 5 1 into 2, 3 and 4, 6 (1 > 2) + 3 + 4, 7 four carriers.
+        `feedback` 0 to 1 feeds operator 1 into itself (harsher). Tune each
+        operator with set_operator. `clear` removes it."""
+        return _guarded(lambda: state.set_fm4(algorithm, feedback, clear))
+
+    @server.tool()
+    def set_operator(
+        operator: int,
+        ratio: float | None = None,
+        fixedHz: float | None = None,
+        followPitch: bool = False,
+        detuneCents: float | None = None,
+        level: float | None = None,
+        attackMs: float | None = None,
+        decayMs: float | None = None,
+        sustainLevel: float | None = None,
+    ) -> dict[str, Any]:
+        """Music mode: one of the four FM operators (1 to 4), starting fm4 if the
+        voice has none. It runs at `ratio` times the note's pitch, or at
+        `fixedHz` (`followPitch` undoes that). `level` is loudness for a carrier
+        and depth for a modulator (1 is very bright; 0.1 to 0.4 is usual). Its
+        envelope rises over `attackMs` and falls to `sustainLevel` over
+        `decayMs`; a modulator that decays makes a struck, darkening tone."""
+        return _guarded(
+            lambda: state.set_operator(
+                operator,
+                ratio,
+                fixedHz,
+                followPitch,
+                detuneCents,
+                level,
+                attackMs,
+                decayMs,
+                sustainLevel,
+            )
+        )
+
+    @server.tool()
     def set_vibrato(
         delayMs: float | None = None,
         fadeMs: float | None = None,

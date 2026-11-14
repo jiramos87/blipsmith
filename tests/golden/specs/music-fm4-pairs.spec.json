@@ -1,0 +1,148 @@
+{
+  "version": 2,
+  "seed": 42,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2000.0,
+  "meta": {
+    "name": "music-fm4-pairs",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Four-operator FM, pairs: algorithm 4 (an electric piano, a tine pair and a body pair) and algorithm 6 (a pair beside two plain carriers, an organ)."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "fm4": {
+        "algorithm": 4,
+        "operators": [
+          {
+            "ratio": 1,
+            "level": 0.12
+          },
+          {
+            "ratio": 1,
+            "level": 1
+          },
+          {
+            "ratio": 14,
+            "level": 0.08,
+            "decayMs": 250,
+            "sustainLevel": 0
+          },
+          {
+            "ratio": 1,
+            "level": 0.6,
+            "decayMs": 600,
+            "sustainLevel": 0.2
+          }
+        ]
+      },
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 900,
+        "sustainLevel": 0.25,
+        "releaseMs": 300
+      },
+      "track": 0
+    },
+    {
+      "waveform": "sine",
+      "fm4": {
+        "algorithm": 6,
+        "operators": [
+          {
+            "ratio": 2,
+            "level": 0.1
+          },
+          {
+            "ratio": 1,
+            "level": 1
+          },
+          {
+            "ratio": 2,
+            "level": 0.5
+          },
+          {
+            "ratio": 4,
+            "level": 0.25
+          }
+        ]
+      },
+      "ampEnv": {
+        "attackMs": 10,
+        "decayMs": 50,
+        "sustainLevel": 0.9,
+        "releaseMs": 80
+      },
+      "track": 1
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "piano",
+        "pan": -0.2,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 1,
+            "midiNote": 60,
+            "velocity": 0.7
+          },
+          {
+            "startBeat": 0,
+            "durationBeats": 1,
+            "midiNote": 64,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 0,
+            "durationBeats": 1,
+            "midiNote": 67,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 1,
+            "durationBeats": 1,
+            "midiNote": 62,
+            "velocity": 0.8
+          },
+          {
+            "startBeat": 1,
+            "durationBeats": 1,
+            "midiNote": 65,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 2,
+            "durationBeats": 1.5,
+            "midiNote": 64,
+            "velocity": 0.9
+          }
+        ]
+      },
+      {
+        "name": "organ",
+        "pan": 0.25,
+        "notes": [
+          {
+            "startBeat": 0,
+            "durationBeats": 2,
+            "midiNote": 48,
+            "velocity": 0.6
+          },
+          {
+            "startBeat": 2,
+            "durationBeats": 1.5,
+            "midiNote": 43,
+            "velocity": 0.6
+          }
+        ]
+      }
+    ]
+  }
+}

@@ -17,12 +17,15 @@ left alone: a list of twelve "off"s tells a reader nothing.
 
 from __future__ import annotations
 
+from blipsmith.ranges import FM4_ALGORITHMS
 from blipsmith.spec import (
     Adsr,
     AmMode,
     Effect,
     EffectKind,
+    Fm4,
     LfoTarget,
+    Operator,
     SoundSpec,
     Voice,
     Waveform,
@@ -104,6 +107,8 @@ def _stage_phrases(voice: Voice) -> list[str]:
         stages.append(
             f"FM at a {_number(voice.fm.ratio)}:1 ratio and index {_number(voice.fm.index)}"
         )
+    if voice.fm4 is not None:
+        stages.append(_fm4_phrase(voice.fm4))
     if voice.am is not None:
         mode = "ring modulation" if voice.am.mode is AmMode.RING else "amplitude modulation"
         stages.append(f"{mode} at {_number(voice.am.rateHz)} Hz")
@@ -140,6 +145,43 @@ def _stage_phrases(voice: Voice) -> list[str]:
     return stages
 
 
+_FM4_SHAPES = (
+    "one stack 1 > 2 > 3 > 4",
+    "1 and 2 into a stack 3 > 4",
+    "1 and the stack 2 > 3 into 4",
+    "the stack 1 > 2 and 3 into 4",
+    "two pairs 1 > 2 and 3 > 4",
+    "1 into each of 2, 3 and 4",
+    "the pair 1 > 2 beside 3 and 4",
+    "four carriers side by side",
+)
+
+
+def _fm4_phrase(fm4: Fm4) -> str:
+    """Four-operator FM: the algorithm by shape, the heard operators and feedback."""
+    _, carriers = FM4_ALGORITHMS[fm4.algorithm]
+    heard = [
+        f"{number} ({_operator_pitch(fm4.operators[number - 1])})"
+        for number in carriers
+        if fm4.operators[number - 1].level > 0
+    ]
+    phrase = f"four-operator FM, algorithm {fm4.algorithm} ({_FM4_SHAPES[fm4.algorithm]})"
+    phrase += (
+        f", heard through operator{'s' if len(heard) != 1 else ''} {_join(heard)}"
+        if heard
+        else ", silent"
+    )
+    if fm4.feedback > 0:
+        phrase += f", operator 1 fed back at {_number(fm4.feedback)}"
+    return phrase
+
+
+def _operator_pitch(operator: Operator) -> str:
+    if operator.fixedHz is not None:
+        return f"fixed at {_number(operator.fixedHz)} Hz"
+    return f"{_number(operator.ratio)}:1"
+
+
 def _expression_phrases(voice: Voice) -> list[str]:
     """Music mode: what each note does beyond its pitch and level."""
     phrases: list[str] = []
@@ -147,7 +189,10 @@ def _expression_phrases(voice: Voice) -> list[str]:
         moved = [
             name
             for name, amount in (
-                ("FM index", voice.touch.fmIndex if voice.fm is not None else 0.0),
+                (
+                    "FM index",
+                    voice.touch.fmIndex if voice.fm is not None or voice.fm4 is not None else 0.0,
+                ),
                 ("cutoff", voice.touch.cutoffOctaves if voice.filter is not None else 0.0),
                 ("attack", voice.touch.attackOctaves),
             )

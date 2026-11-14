@@ -14,9 +14,11 @@ from typing import Any
 
 import pytest
 
+from blipsmith.explain import explain_spec
 from blipsmith.ranges import FM4_ALGORITHMS, FM4_OPERATORS
 from blipsmith.result import SpecError
 from blipsmith.schema import get_schema
+from blipsmith.session import Session
 from blipsmith.spec import parse_spec, to_canonical_json, validate_spec
 
 
@@ -177,3 +179,79 @@ def test_the_core_holds_the_same_algorithm_table() -> None:
     for row, (routing, carriers) in zip(rows, FM4_ALGORITHMS, strict=True):
         assert [int(cell, 16) for cell in row[:4]] == [bits(feeds) for feeds in routing]
         assert int(row[4], 16) == bits(carriers)
+
+
+# --- The session verbs and the explanation -----------------------------------------
+
+
+def music_session() -> Session:
+    session = Session()
+    session.new_voice("sine")
+    session.set_render_options(version=2)
+    return session
+
+
+def test_set_operator_starts_fm4_and_patches_one_operator() -> None:
+    session = music_session()
+    session.set_operator(3, ratio=14.0, level=0.1)
+    session.set_operator(3, decayMs=300.0)
+    fm4 = session.spec.voices[0].fm4
+    assert fm4 is not None and fm4.algorithm == 0
+    third = fm4.operators[2]
+    assert (third.ratio, third.level, third.decayMs) == (14.0, 0.1, 300.0)
+    assert fm4.operators[0].ratio == 1.0
+
+
+def test_follow_pitch_drops_a_fixed_frequency() -> None:
+    session = music_session()
+    session.set_operator(1, fixedHz=880.0)
+    first = session.spec.voices[0].fm4
+    assert first is not None and first.operators[0].fixedHz == 880.0
+    session.set_operator(1, followPitch=True)
+    after = session.spec.voices[0].fm4
+    assert after is not None and after.operators[0].fixedHz is None
+
+
+def test_set_fm4_patches_and_clears() -> None:
+    session = music_session()
+    session.set_fm4(algorithm=5)
+    session.set_fm4(feedback=0.4)
+    fm4 = session.spec.voices[0].fm4
+    assert fm4 is not None and (fm4.algorithm, fm4.feedback) == (5, 0.4)
+    session.set_fm4(clear=True)
+    assert session.spec.voices[0].fm4 is None
+
+
+def test_an_operator_outside_one_to_four_is_refused() -> None:
+    session = music_session()
+    with pytest.raises(SpecError) as caught:
+        session.set_operator(5, level=0.5)
+    assert caught.value.error.field == "fm4.operators"
+    assert session.spec.voices[0].fm4 is None
+
+
+def test_the_setters_are_refused_on_version_one() -> None:
+    session = Session()
+    session.new_voice("sine")
+    with pytest.raises(SpecError) as caught:
+        session.set_fm4(algorithm=1)
+    assert caught.value.error.field == "version"
+
+
+def test_the_explanation_names_the_algorithm_and_the_carriers() -> None:
+    operators = [{"level": 0.2}, {}, {"level": 0.1, "ratio": 14}, {"ratio": 1, "level": 0.8}]
+    spec = parse_spec(
+        music(
+            {
+                "waveform": "sine",
+                "fm4": {"algorithm": 4, "feedback": 0.3, "operators": operators},
+                "touch": {"fmIndex": 3},
+            }
+        )
+    )
+    text = explain_spec(spec)
+    assert (
+        "four-operator FM, algorithm 4 (two pairs 1 > 2 and 3 > 4), heard through operators "
+        "2 (1:1) and 4 (1:1), operator 1 fed back at 0.3"
+    ) in text
+    assert "touch moving the FM index with velocity" in text
