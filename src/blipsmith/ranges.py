@@ -209,6 +209,21 @@ RANGES: dict[tuple[str, str], NumericRange] = {
     ("Operator", "sustainLevel"): NumericRange(
         0, 1, 1, "", "level held after decay, to the end of the note's tail"
     ),
+    # String (music mode): a plucked or struck string in place of the oscillator
+    ("String", "position"): NumericRange(
+        0.02, 0.5, 0.2, "", "where along the string it is plucked or struck; 0.5 is the middle"
+    ),
+    ("String", "brightness"): NumericRange(
+        0, 1, 0.6, "", "how hard and bright the pluck or hammer is"
+    ),
+    ("String", "decayMs"): NumericRange(
+        50, 30_000, 2500, "ms", "time for the string to fall 60 dB"
+    ),
+    ("String", "damping"): NumericRange(
+        0, 1, 0.5, "", "how much faster the high partials die than the fundamental"
+    ),
+    ("String", "body"): NumericRange(0, 1, 0, "", "mix of a body resonance; 0 is off"),
+    ("String", "bodyHz"): NumericRange(60, 2000, 200, "Hz", "the body resonance's frequency"),
     # Composition
     ("Composition", "tempoBpm"): NumericRange(20, 300, 120, "BPM", "composition tempo"),
     ("Composition", "swing"): NumericRange(0, 0.75, 0, "", "offbeat delay as a fraction of a step"),

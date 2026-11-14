@@ -58,6 +58,11 @@ enum class GlideMode : int {
     Always,
 };
 
+enum class Excitation : int {
+    Pluck = 0,
+    Strike = 1,
+};
+
 enum class EffectKind : int {
     Distortion = 0,
     Wavefold,
@@ -149,6 +154,17 @@ struct Fm4 {
     Operator operators[kFm4Operators];
 };
 
+// Music mode, a plucked or struck string in place of the oscillator.
+struct String {
+    Excitation excitation = Excitation::Pluck;
+    double position = 0.2;
+    double brightness = 0.6;
+    double decayMs = 2500.0;
+    double damping = 0.5;
+    double body = 0.0;
+    double bodyHz = 200.0;
+};
+
 // One flat struct per the published contract: each kind reads the parameters
 // that apply to it and ignores the rest.
 struct Effect {
@@ -201,6 +217,9 @@ struct Voice {
     // Music mode: four-operator FM in place of the oscillator.
     bool hasFm4 = false;
     Fm4 fm4;
+    // Music mode: a plucked or struck string in place of the oscillator.
+    bool hasString = false;
+    String string;
 };
 
 // One scheduled event. The Python compiler has already expanded painted steps

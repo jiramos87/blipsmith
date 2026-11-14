@@ -406,6 +406,22 @@ GlideMode glide_mode_from(const JsonValue& block) {
     return found->text == "always" ? GlideMode::Always : GlideMode::Legato;
 }
 
+String string_from(const JsonValue& block) {
+    String string;
+    const JsonValue* excitation = block.find("excitation");
+    if (excitation != nullptr && excitation->kind == JsonValue::Kind::String &&
+        excitation->text == "strike") {
+        string.excitation = Excitation::Strike;
+    }
+    string.position = number_or(block, "position", string.position);
+    string.brightness = number_or(block, "brightness", string.brightness);
+    string.decayMs = number_or(block, "decayMs", string.decayMs);
+    string.damping = number_or(block, "damping", string.damping);
+    string.body = number_or(block, "body", string.body);
+    string.bodyHz = number_or(block, "bodyHz", string.bodyHz);
+    return string;
+}
+
 Fm4 fm4_from(const JsonValue& block) {
     Fm4 fm4;
     fm4.algorithm = int_or(block, "algorithm", fm4.algorithm);
@@ -624,6 +640,10 @@ Spec parse_spec(const std::string& json) {
                 if (const JsonValue* block = object_at(entry, "fm4")) {
                     voice.hasFm4 = true;
                     voice.fm4 = fm4_from(*block);
+                }
+                if (const JsonValue* block = object_at(entry, "string")) {
+                    voice.hasString = true;
+                    voice.string = string_from(*block);
                 }
                 if (const JsonValue* block = object_at(entry, "vibrato")) {
                     voice.hasVibrato = true;

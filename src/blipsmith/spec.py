@@ -92,6 +92,11 @@ class GlideMode(StrEnum):
     ALWAYS = "always"
 
 
+class Excitation(StrEnum):
+    PLUCK = "pluck"
+    STRIKE = "strike"
+
+
 class EffectKind(StrEnum):
     DISTORTION = "distortion"
     WAVEFOLD = "wavefold"
@@ -255,6 +260,23 @@ class Fm4(SpecModel):
     )
 
 
+class String(SpecModel):
+    """Music mode: a plucked or struck string in place of the voice's oscillator.
+    `pluck` sets it ringing with a burst of the voice's noise, `strike` with a
+    hammer. `position` is where along the string, `brightness` how hard and bright
+    the pluck or hammer is, `decayMs` how long it rings, `damping` how much faster
+    its highs die. `body` mixes in a resonance at `bodyHz`. The voice's amp
+    envelope still shapes each note and its release mutes the string."""
+
+    excitation: Excitation = Excitation.PLUCK
+    position: float = RANGES[("String", "position")].default
+    brightness: float = RANGES[("String", "brightness")].default
+    decayMs: float = RANGES[("String", "decayMs")].default
+    damping: float = RANGES[("String", "damping")].default
+    body: float = RANGES[("String", "body")].default
+    bodyHz: float = RANGES[("String", "bodyHz")].default
+
+
 class Limiter(SpecModel):
     """The master safety gate. There is deliberately no `enabled` field: the PRD
     makes the limiter and clip guard non-optional on every render."""
@@ -299,6 +321,8 @@ class Voice(SpecModel):
     vibrato: Vibrato | None = music_field()
     # Music mode: four-operator FM, in place of the oscillator.
     fm4: Fm4 | None = music_field()
+    # Music mode: a plucked or struck string, in place of the oscillator.
+    string: String | None = music_field()
 
 
 class Note(SpecModel):
@@ -400,7 +424,7 @@ def music_fields_in(spec: SoundSpec) -> list[str]:
     if spec.master.effects is not None:
         found.append("master.effects")
     for index, voice in enumerate(spec.voices):
-        for name in ("key", "touch", "glide", "vibrato", "fm4"):
+        for name in ("key", "touch", "glide", "vibrato", "fm4", "string"):
             if getattr(voice, name) is not None:
                 found.append(f"voices[{index}].{name}")
     if spec.composition is not None:
@@ -463,6 +487,18 @@ def _check_music(spec: SoundSpec) -> None:
             raise invalid_spec(
                 f"voices[{index}].fm4: the four sine operators replace the oscillator, so the "
                 f"waveform must be 'sine', got {voice.waveform.value!r}.",
+                field=f"voices[{index}].waveform",
+            )
+        if voice.string is not None and (voice.fm is not None or voice.fm4 is not None):
+            raise invalid_spec(
+                f"voices[{index}].string: the string replaces the oscillator, so it cannot sit "
+                "beside fm or fm4. Remove one of them.",
+                field=f"voices[{index}].string",
+            )
+        if voice.string is not None and voice.waveform is not Waveform.SINE:
+            raise invalid_spec(
+                f"voices[{index}].string: the string replaces the oscillator, so the waveform "
+                f"must be 'sine', got {voice.waveform.value!r}.",
                 field=f"voices[{index}].waveform",
             )
     for index, effect in enumerate(spec.master.effects or []):

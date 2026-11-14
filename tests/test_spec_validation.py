@@ -65,6 +65,8 @@ def test_voice_surface_matches_prd() -> None:
         "vibrato",
         # docs/prd/blipsmith-fm4.md: four-operator FM, version 2 only.
         "fm4",
+        # docs/prd/blipsmith-strings.md: a plucked or struck string, version 2 only.
+        "string",
     }
 
 
