@@ -28,6 +28,17 @@ SUPPORTED_CHANNELS = (1, 2)
 SPEC_VERSION: Literal[1] = 1
 LIMITER_TARGET_DBFS = -1.0
 
+# The music mode (version 2) widens the composition: any number of tracks up to
+# this, more voices, kit keys, shared effects, and the loop. Version 1 keeps the
+# limits above, so every spec written before the music mode renders as it did.
+MUSIC_SPEC_VERSION: Literal[2] = 2
+MUSIC_MAX_VOICES = 64
+MUSIC_MAX_TRACKS = 32
+TRACK_NAME_MAX_LENGTH = 40
+# The master chain is the shared room, run once per track so stems sum to the
+# mix; only kinds that are linear in their input allow that.
+MASTER_EFFECT_KINDS = ("delay", "reverb")
+
 # A filter cutoff has a second, render-time ceiling: a biquad's coefficients only
 # stay well conditioned comfortably below Nyquist, and at Nyquist itself the
 # corner has nowhere left to sit. The published `cutoffHz` range is absolute; a
@@ -87,6 +98,9 @@ RANGES: dict[tuple[str, str], NumericRange] = {
     ("Voice", "mixDb"): NumericRange(-60, 12, 0, "dB", "voice level into the bus"),
     ("Voice", "track"): NumericRange(
         0, TRACK_COUNT - 1, 0, "", "mixer track this voice sits on", True
+    ),
+    ("Voice", "key"): NumericRange(
+        0, 127, 36, "", "music mode: the MIDI note this voice answers to on a kit track", True
     ),
     # Adsr
     ("Adsr", "attackMs"): NumericRange(0, 10_000, 5, "ms", "silence to full amplitude"),
@@ -160,6 +174,19 @@ RANGES: dict[tuple[str, str], NumericRange] = {
 # durationMs carries two documented maxima. The clamp pass swaps this in when the
 # spec has a composition, so a 4-minute piece is not truncated to a one-shot.
 DURATION_MS_COMPOSITION = NumericRange(10, 300_000, 1000, "ms", "composition render length", False)
+
+
+def track_range_for(track_count: int) -> NumericRange:
+    """`Voice.track` for a music-mode spec: any of the tracks it declares."""
+    published = RANGES[("Voice", "track")]
+    return NumericRange(
+        0,
+        max(track_count - 1, 0),
+        published.default,
+        published.unit,
+        published.description,
+        True,
+    )
 
 
 def cutoff_range_for(sample_rate: int) -> NumericRange:

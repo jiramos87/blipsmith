@@ -25,6 +25,8 @@ class WarningCode(StrEnum):
     CLAMPED = "clamped"
     DUPLICATE_NOTE_DROPPED = "duplicate_note_dropped"
     NOTE_BEYOND_END_DROPPED = "note_beyond_end_dropped"
+    NOTE_UNPLAYED = "note_unplayed"
+    STEM_CLIPPED = "stem_clipped"
 
 
 class ErrorCode(StrEnum):
@@ -51,6 +53,14 @@ class ErrorInfo(BaseModel):
     validValues: list[str | int] | None = None
 
 
+class StemFile(BaseModel):
+    """One track's share of the mix, written beside it."""
+
+    track: int
+    name: str | None = None
+    wavPath: str
+
+
 class RenderResult(BaseModel):
     """What a render call hands back, successful or not."""
 
@@ -59,6 +69,8 @@ class RenderResult(BaseModel):
     specPath: str | None = None
     explanation: str | None = None
     features: dict[str, float | None] | None = None
+    # Music mode, when stems were asked for: one file per track, in track order.
+    stems: list[StemFile] = Field(default_factory=list)
     warnings: list[SpecWarning] = Field(default_factory=list)
     error: ErrorInfo | None = None
 

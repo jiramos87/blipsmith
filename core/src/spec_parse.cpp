@@ -316,6 +316,14 @@ int int_or(const JsonValue& object, const char* key, int fallback) {
     return static_cast<int>(found->number);
 }
 
+bool bool_or(const JsonValue& object, const char* key, bool fallback) {
+    const JsonValue* found = object.find(key);
+    if (found == nullptr || found->kind != JsonValue::Kind::Bool) {
+        return fallback;
+    }
+    return found->boolean;
+}
+
 const JsonValue* object_at(const JsonValue& object, const char* key) {
     const JsonValue* found = object.find(key);
     if (found == nullptr || found->kind != JsonValue::Kind::Object) {
@@ -401,9 +409,11 @@ EffectKind effect_kind_from(const JsonValue& block) {
     return EffectKind::Distortion;
 }
 
-std::vector<Effect> effects_from(const JsonValue& voice) {
+// Reads the `effects` list of a voice, a track, or the master: all three hold
+// the same Effect objects.
+std::vector<Effect> effects_from(const JsonValue& owner) {
     std::vector<Effect> effects;
-    const JsonValue* found = voice.find("effects");
+    const JsonValue* found = owner.find("effects");
     if (found == nullptr || found->kind != JsonValue::Kind::Array) {
         return effects;
     }
@@ -427,6 +437,7 @@ std::vector<Effect> effects_from(const JsonValue& voice) {
 Composition composition_from(const JsonValue& block) {
     Composition composition;
     composition.tempoBpm = number_or(block, "tempoBpm", composition.tempoBpm);
+    composition.loop = bool_or(block, "loop", false);
 
     const JsonValue* tracks = block.find("tracks");
     if (tracks == nullptr || tracks->kind != JsonValue::Kind::Array) {
@@ -437,6 +448,7 @@ Composition composition_from(const JsonValue& block) {
         if (entry.kind == JsonValue::Kind::Object) {
             track.gainDb = number_or(entry, "gainDb", track.gainDb);
             track.pan = number_or(entry, "pan", track.pan);
+            track.effects = effects_from(entry);
             const JsonValue* notes = entry.find("notes");
             if (notes != nullptr && notes->kind == JsonValue::Kind::Array) {
                 for (const JsonValue& item : notes->items) {
@@ -493,6 +505,7 @@ Spec parse_spec(const std::string& json) {
             spec.master.limiter.targetDbfs =
                 number_or(*limiter, "targetDbfs", spec.master.limiter.targetDbfs);
         }
+        spec.master.effects = effects_from(*master);
     }
 
     const JsonValue* composition = root.find("composition");
@@ -557,6 +570,7 @@ Spec parse_spec(const std::string& json) {
                 voice.pan = number_or(entry, "pan", voice.pan);
                 voice.mixDb = number_or(entry, "mixDb", voice.mixDb);
                 voice.track = int_or(entry, "track", voice.track);
+                voice.key = int_or(entry, "key", -1);
                 spec.voices.push_back(voice);
             }
         }

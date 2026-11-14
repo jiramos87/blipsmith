@@ -142,6 +142,9 @@ struct Voice {
     double pan = 0.0;
     double mixDb = 0.0;
     int track = 0;
+    // Music mode: the MIDI note this voice answers to on a kit track; -1 means
+    // it plays every note of its track, as in version 1.
+    int key = -1;
 };
 
 // One scheduled event. The Python compiler has already expanded painted steps
@@ -163,11 +166,15 @@ struct Track {
     double gainDb = 0.0;
     double pan = 0.0;
     std::vector<Note> notes;
+    // Music mode: the track's stereo insert chain.
+    std::vector<Effect> effects;
 };
 
 struct Composition {
     double tempoBpm = 120.0;
     std::vector<Track> tracks;
+    // Music mode: wrap everything past the end back onto the start.
+    bool loop = false;
 };
 
 struct Limiter {
@@ -177,6 +184,8 @@ struct Limiter {
 struct Master {
     double gainDb = 0.0;
     Limiter limiter;
+    // Music mode: the shared room (delay and reverb), run once per track.
+    std::vector<Effect> effects;
 };
 
 struct Spec {

@@ -57,6 +57,8 @@ def test_voice_surface_matches_prd() -> None:
         "pan",
         "mixDb",
         "track",
+        # docs/prd/blipsmith-music-mode.md: the kit key, version 2 only.
+        "key",
     }
 
 
@@ -168,10 +170,11 @@ def test_error_result_envelope_reports_invalid_spec() -> None:
 
 def test_unsupported_version_names_the_supported_one() -> None:
     with pytest.raises(SpecError) as caught:
-        parse_spec({"version": 2, **one_voice()})
+        parse_spec({"version": 3, **one_voice()})
     error = caught.value.error
     assert error.field == "version"
-    assert error.validValues == [1]
+    # Version 2 is the music mode (docs/prd/blipsmith-music-mode.md).
+    assert error.validValues == [1, 2]
 
 
 def test_supported_version_is_accepted() -> None:

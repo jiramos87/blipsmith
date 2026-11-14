@@ -27,12 +27,18 @@ from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_valida
 
 from blipsmith.ranges import (
     DURATION_MS_COMPOSITION,
+    MASTER_EFFECT_KINDS,
     MAX_VOICES,
+    MUSIC_MAX_TRACKS,
+    MUSIC_MAX_VOICES,
+    MUSIC_SPEC_VERSION,
     RANGES,
     SPEC_VERSION,
     TRACK_COUNT,
+    TRACK_NAME_MAX_LENGTH,
     NumericRange,
     cutoff_range_for,
+    track_range_for,
 )
 from blipsmith.result import SpecError, SpecWarning, WarningCode, invalid_spec
 
@@ -103,24 +109,23 @@ class Channels(IntEnum):
 # --- Models -------------------------------------------------------------------
 
 
+def _absent(value: Any) -> bool:
+    return value is None
+
+
+def music_field(**kwargs: Any) -> Any:
+    """A field only the music mode (version 2) reads. Null means unset, and an
+    unset one is left out of every dump, so a spec written before the music mode
+    serializes, hashes, and renders exactly as it did."""
+    return Field(default=None, exclude_if=_absent, **kwargs)
+
+
 class SpecModel(BaseModel):
     """Shared config. `extra="forbid"` turns a misspelled key into a typed error
     rather than a silently ignored one, which matters when the caller is an agent
     that cannot hear the difference."""
 
     model_config = ConfigDict(extra="forbid", validate_assignment=False)
-
-
-class Limiter(SpecModel):
-    """The master safety gate. There is deliberately no `enabled` field: the PRD
-    makes the limiter and clip guard non-optional on every render."""
-
-    targetDbfs: float = RANGES[("Limiter", "targetDbfs")].default
-
-
-class Master(SpecModel):
-    gainDb: float = RANGES[("Master", "gainDb")].default
-    limiter: Limiter = Field(default_factory=Limiter)
 
 
 class Adsr(SpecModel):
@@ -181,6 +186,20 @@ class Effect(SpecModel):
     damping: float = RANGES[("Effect", "damping")].default
 
 
+class Limiter(SpecModel):
+    """The master safety gate. There is deliberately no `enabled` field: the PRD
+    makes the limiter and clip guard non-optional on every render."""
+
+    targetDbfs: float = RANGES[("Limiter", "targetDbfs")].default
+
+
+class Master(SpecModel):
+    gainDb: float = RANGES[("Master", "gainDb")].default
+    limiter: Limiter = Field(default_factory=Limiter)
+    # Music mode: the shared room every track goes through (delay and reverb).
+    effects: list[Effect] | None = music_field()
+
+
 class Voice(SpecModel):
     waveform: Waveform
     fundamentalHz: float = RANGES[("Voice", "fundamentalHz")].default
@@ -201,6 +220,9 @@ class Voice(SpecModel):
     pan: float = RANGES[("Voice", "pan")].default
     mixDb: float = RANGES[("Voice", "mixDb")].default
     track: int = int(RANGES[("Voice", "track")].default)
+    # Music mode: on a kit track, the MIDI note this voice answers to. It then
+    # plays only that note, at its own pitch.
+    key: int | None = music_field()
 
 
 class Note(SpecModel):
@@ -225,6 +247,10 @@ class Track(SpecModel):
     stepsPerBeat: int = int(RANGES[("Track", "stepsPerBeat")].default)
     notes: list[Note] = Field(default_factory=list)
     steps: list[Step] = Field(default_factory=list)
+    # Music mode: a name for the stem and the explanation, and the track's own
+    # stereo insert chain, run once over everything its voices play.
+    name: str | None = music_field(max_length=TRACK_NAME_MAX_LENGTH)
+    effects: list[Effect] | None = music_field()
 
 
 def _default_tracks() -> list[Track]:
@@ -234,9 +260,14 @@ def _default_tracks() -> list[Track]:
 class Composition(SpecModel):
     tempoBpm: float = RANGES[("Composition", "tempoBpm")].default
     swing: float = RANGES[("Composition", "swing")].default
+    # Exactly TRACK_COUNT in version 1; 1 to MUSIC_MAX_TRACKS in the music mode.
+    # The count rule depends on the version, so the spec checks it.
     tracks: list[Track] = Field(
-        default_factory=_default_tracks, min_length=TRACK_COUNT, max_length=TRACK_COUNT
+        default_factory=_default_tracks, min_length=1, max_length=MUSIC_MAX_TRACKS
     )
+    # Music mode: the file is exactly `durationMs` and everything that rings past
+    # the end is wrapped onto the start.
+    loop: bool | None = music_field()
 
 
 class Meta(SpecModel):
@@ -246,13 +277,14 @@ class Meta(SpecModel):
 
 
 class SoundSpec(SpecModel):
-    version: Literal[1] = SPEC_VERSION
+    version: Literal[1, 2] = SPEC_VERSION
     seed: int = int(RANGES[("SoundSpec", "seed")].default)
     sampleRate: SampleRate = SampleRate.SR_22050
     channels: Channels = Channels.MONO
     durationMs: float = RANGES[("SoundSpec", "durationMs")].default
     master: Master = Field(default_factory=Master)
-    voices: list[Voice] = Field(default_factory=list, max_length=MAX_VOICES)
+    # The count rule depends on the version, so the spec checks it.
+    voices: list[Voice] = Field(default_factory=list)
     composition: Composition | None = None
     meta: Meta = Field(default_factory=Meta)
 
@@ -270,6 +302,81 @@ class SoundSpec(SpecModel):
         ):
             return {**data, "channels": Channels.STEREO}
         return data
+
+    @property
+    def is_music(self) -> bool:
+        return self.version == MUSIC_SPEC_VERSION
+
+    @model_validator(mode="after")
+    def _version_limits(self) -> SoundSpec:
+        """The limits that depend on the version. Raised as `SpecError` directly,
+        so the message can name the version that would allow the field."""
+        if self.is_music:
+            _check_music(self)
+        else:
+            _check_version_one(self)
+        return self
+
+
+def music_fields_in(spec: SoundSpec) -> list[str]:
+    """The path of every music-mode field the spec sets, in spec order."""
+    found: list[str] = []
+    if spec.master.effects is not None:
+        found.append("master.effects")
+    for index, voice in enumerate(spec.voices):
+        if voice.key is not None:
+            found.append(f"voices[{index}].key")
+    if spec.composition is not None:
+        if spec.composition.loop is not None:
+            found.append("composition.loop")
+        for index, track in enumerate(spec.composition.tracks):
+            for name in ("name", "effects"):
+                if getattr(track, name) is not None:
+                    found.append(f"composition.tracks[{index}].{name}")
+    return found
+
+
+def _check_version_one(spec: SoundSpec) -> None:
+    if len(spec.voices) > MAX_VOICES:
+        raise invalid_spec(
+            f"a spec may hold at most {MAX_VOICES} voices; the existing voices are unchanged.",
+            field="voices",
+        )
+    if spec.composition is not None and len(spec.composition.tracks) != TRACK_COUNT:
+        raise invalid_spec(
+            f"composition.tracks: a version 1 composition has exactly {TRACK_COUNT} tracks, "
+            f"got {len(spec.composition.tracks)}. Version 2 (the music mode) allows 1 to "
+            f"{MUSIC_MAX_TRACKS}.",
+            field="composition.tracks",
+        )
+    music = music_fields_in(spec)
+    if music:
+        raise invalid_spec(
+            f"{music[0]} belongs to the music mode: set version to {MUSIC_SPEC_VERSION} to use it.",
+            field=music[0],
+        )
+
+
+def _check_music(spec: SoundSpec) -> None:
+    if spec.composition is None:
+        raise invalid_spec(
+            f"version {MUSIC_SPEC_VERSION} is the music mode and needs a composition.",
+            field="composition",
+        )
+    if len(spec.voices) > MUSIC_MAX_VOICES:
+        raise invalid_spec(
+            f"a music-mode spec may hold at most {MUSIC_MAX_VOICES} voices; "
+            "the existing voices are unchanged.",
+            field="voices",
+        )
+    for index, effect in enumerate(spec.master.effects or []):
+        if effect.kind.value not in MASTER_EFFECT_KINDS:
+            raise invalid_spec(
+                f"master.effects[{index}].kind: {effect.kind.value!r} cannot sit on the master. "
+                f"Valid values: {', '.join(repr(k) for k in MASTER_EFFECT_KINDS)}.",
+                field=f"master.effects[{index}].kind",
+                valid_values=list(MASTER_EFFECT_KINDS),
+            )
 
 
 # --- Annotation helpers (shared with schema.py) --------------------------------
@@ -338,12 +445,6 @@ def _error_from_validation(exc: ValidationError) -> SpecError:
     field = _format_loc(loc) or None
     kind = first["type"]
     owner, annotation = _model_and_annotation_at(loc)
-
-    if kind == "too_long" and loc == ("voices",):
-        return invalid_spec(
-            f"a spec may hold at most {MAX_VOICES} voices; the existing voices are unchanged.",
-            field="voices",
-        )
 
     if kind == "extra_forbidden":
         is_model = isinstance(owner, type) and issubclass(owner, BaseModel)
@@ -472,6 +573,8 @@ def clamp_spec(spec: SoundSpec) -> tuple[SoundSpec, list[SpecWarning]]:
     }
     if working.composition is not None:
         overrides[("SoundSpec", "durationMs")] = DURATION_MS_COMPOSITION
+        if working.is_music:
+            overrides[("Voice", "track")] = track_range_for(len(working.composition.tracks))
     _clamp_model(working, "", warnings, overrides)
     return working, warnings
 

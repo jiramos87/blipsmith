@@ -16,8 +16,12 @@ from pydantic.fields import FieldInfo
 
 from blipsmith.ranges import (
     DURATION_MS_COMPOSITION,
+    MASTER_EFFECT_KINDS,
     MAX_CUTOFF_FRACTION,
     MAX_VOICES,
+    MUSIC_MAX_TRACKS,
+    MUSIC_MAX_VOICES,
+    MUSIC_SPEC_VERSION,
     RANGES,
     SPEC_VERSION,
     SUPPORTED_CHANNELS,
@@ -108,11 +112,14 @@ def _describe_field(model_name: str, field_name: str, field: FieldInfo) -> dict[
         if bounds.description:
             described["description"] = bounds.description
 
+    # Version 1 limits; the music mode's are under `limits.music`.
     if field_name == "voices":
         described["maxItems"] = MAX_VOICES
     if field_name == "tracks":
         described["minItems"] = TRACK_COUNT
         described["maxItems"] = TRACK_COUNT
+    if model_name in _MUSIC_FIELDS and field_name in _MUSIC_FIELDS[model_name]:
+        described["musicMode"] = True
 
     return described
 
@@ -126,6 +133,15 @@ def _scalar(annotation: Any) -> str:
             if issubclass(annotation, base):
                 return name
     return "string"
+
+
+# Fields only a version 2 spec may set.
+_MUSIC_FIELDS: dict[str, tuple[str, ...]] = {
+    "Master": ("effects",),
+    "Voice": ("key",),
+    "Track": ("name", "effects"),
+    "Composition": ("loop",),
+}
 
 
 def get_schema() -> dict[str, Any]:
@@ -142,6 +158,7 @@ def get_schema() -> dict[str, Any]:
 
     return {
         "specVersion": SPEC_VERSION,
+        "specVersions": [SPEC_VERSION, MUSIC_SPEC_VERSION],
         "root": SoundSpec.__name__,
         "limits": {
             "maxVoices": MAX_VOICES,
@@ -163,6 +180,14 @@ def get_schema() -> dict[str, Any]:
             # Published so the caller can work out the real cutoff ceiling for
             # the sample rate it picked, instead of discovering it as a warning.
             "maxCutoffFraction": MAX_CUTOFF_FRACTION,
+            # Version 2: any number of tracks, a kit, shared effects, the loop.
+            "music": {
+                "specVersion": MUSIC_SPEC_VERSION,
+                "maxVoices": MUSIC_MAX_VOICES,
+                "minTracks": 1,
+                "maxTracks": MUSIC_MAX_TRACKS,
+                "masterEffectKinds": list(MASTER_EFFECT_KINDS),
+            },
         },
         "models": models,
     }
