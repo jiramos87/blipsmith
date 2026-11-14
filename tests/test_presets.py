@@ -233,6 +233,9 @@ def test_a_preset_reports_a_full_set_of_features(name: str) -> None:
         "estimatedFundamentalHz",
         "spectralCentroidHz",
         "attackTimeMs",
+        # docs/prd/blipsmith-music-mode.md: loudness and true peak, on every render.
+        "integratedLufs",
+        "truePeakDbtp",
     }
     assert all(value is not None for value in measured.values())
     assert measured["durationMs"] == pytest.approx(load_preset(name).durationMs, abs=1.0)

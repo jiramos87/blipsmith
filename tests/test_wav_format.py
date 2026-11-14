@@ -99,6 +99,9 @@ def test_features_dict_carries_every_pinned_key() -> None:
         "estimatedFundamentalHz",
         "spectralCentroidHz",
         "attackTimeMs",
+        # docs/prd/blipsmith-music-mode.md: loudness and true peak, on every render.
+        "integratedLufs",
+        "truePeakDbtp",
     }
     assert features["durationMs"] == pytest.approx(1000.0)
     # B03 returned the other five as nulls, meaning "not measured yet". B08
