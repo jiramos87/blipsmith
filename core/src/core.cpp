@@ -7,6 +7,7 @@
 
 #include <pybind11/pybind11.h>
 
+#include <cstddef>
 #include <string>
 
 #include "render.h"
@@ -22,8 +23,8 @@ namespace {
 // All six features are measured from the finished audio. The driving agent
 // cannot hear, so these are how it checks whether the change it made did what
 // it wanted.
-py::dict render(const std::string& spec_json) {
-    const blipsmith::RenderOutput output = blipsmith::render_spec_json(spec_json);
+py::dict render(const std::string& spec_json, bool stems) {
+    const blipsmith::RenderOutput output = blipsmith::render_spec_json(spec_json, stems);
 
     py::dict features;
     features["durationMs"] = output.features.durationMs;
@@ -36,6 +37,16 @@ py::dict render(const std::string& spec_json) {
     py::dict result;
     result["wav"] = py::bytes(output.wav);
     result["features"] = features;
+    if (stems) {
+        py::list stemWavs;
+        py::list stemClipped;
+        for (std::size_t i = 0; i < output.stems.size(); ++i) {
+            stemWavs.append(py::bytes(output.stems[i]));
+            stemClipped.append(static_cast<bool>(output.stemClipped[i]));
+        }
+        result["stems"] = stemWavs;
+        result["stemClipped"] = stemClipped;
+    }
     return result;
 }
 
@@ -58,7 +69,10 @@ PYBIND11_MODULE(_core, m) {
         "render",
         &render,
         py::arg("spec_json"),
+        py::arg("stems") = false,
         "Render canonical SoundSpec JSON. Returns {'wav': bytes, 'features': dict}.\n"
+        "With stems=True a music-mode spec also returns 'stems' (one WAV per track)\n"
+        "and 'stemClipped'.\n"
         "The JSON must already be validated, clamped, and defaults-filled by the\n"
         "Python layer: the core neither validates nor clamps.");
 }

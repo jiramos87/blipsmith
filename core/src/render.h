@@ -5,6 +5,7 @@
 
 #include <cstdint>
 #include <string>
+#include <vector>
 
 #include "features.h"
 
@@ -18,8 +19,12 @@ struct RenderOutput {
     // Measured from the rendered PCM rather than restated from the spec, so
     // they reflect the audio that actually exists.
     Features features;
+    // Music mode with stems asked for: one WAV per track, in track order, and
+    // whether the clip guard had to touch it.
+    std::vector<std::string> stems;
+    std::vector<bool> stemClipped;
 };
 
-RenderOutput render_spec_json(const std::string& specJson);
+RenderOutput render_spec_json(const std::string& specJson, bool wantStems = false);
 
 }  // namespace blipsmith

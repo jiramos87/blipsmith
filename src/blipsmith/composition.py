@@ -142,6 +142,41 @@ def _compile_track(
     return kept
 
 
+def voice_plays(key: int | None, midi_note: int | None) -> bool:
+    """The kit rule: a keyless voice plays every note of its track, a keyed one
+    only the note that names its key (and then at its own pitch)."""
+    return key is None or key == midi_note
+
+
+def _unplayed_notes(spec: SoundSpec) -> list[SpecWarning]:
+    """Music mode: a note on a track with voices that none of them plays. The
+    agent cannot hear the hole, so it is told where it is."""
+    composition = spec.composition
+    assert composition is not None
+    warnings: list[SpecWarning] = []
+    for index, track in enumerate(composition.tracks):
+        keys = [voice.key for voice in spec.voices if voice.track == index]
+        if not keys:
+            continue
+        for note in track.notes:
+            if not any(voice_plays(key, note.midiNote) for key in keys):
+                param = f"composition.tracks[{index}].notes"
+                warnings.append(
+                    SpecWarning(
+                        code=WarningCode.NOTE_UNPLAYED,
+                        param=param,
+                        requested=note.startBeat,
+                        applied=None,
+                        message=(
+                            f"{param}: the note at beat {note.startBeat} ({_pitch_of(note)}) "
+                            "is silent; no voice on this track plays it (a keyed voice "
+                            "plays only its key)."
+                        ),
+                    )
+                )
+    return warnings
+
+
 def compile_composition(spec: SoundSpec) -> tuple[SoundSpec, list[SpecWarning]]:
     """Materialize steps into notes, apply swing, and drop what cannot sound.
 
@@ -166,6 +201,9 @@ def compile_composition(spec: SoundSpec) -> tuple[SoundSpec, list[SpecWarning]]:
             warnings,
         )
         track.steps = []
+
+    if working.is_music:
+        warnings.extend(_unplayed_notes(working))
 
     # The shuffle now lives in the note times, so the setting has done its job.
     # Zeroing it is what makes a second pass a no-op.

@@ -333,8 +333,10 @@ def test_the_limiter_has_no_bypass_field() -> None:
 
 def test_the_spec_surface_carries_no_switches_at_all() -> None:
     """A stronger version of the same claim, taken from the published schema
-    rather than from the model: nothing anywhere in the spec is a boolean, so
-    there is no field that could turn a stage on or off."""
+    rather than from the model: nothing in the spec is a boolean, so there is no
+    field that could turn a stage on or off. The one exception is the music
+    mode's `loop` (docs/prd/blipsmith-music-mode.md), which says how the file
+    ends and sits nowhere near the master bus; any other boolean still fails."""
     schema = get_schema()
     switches = [
         f"{model}.{name}"
@@ -343,7 +345,7 @@ def test_the_spec_surface_carries_no_switches_at_all() -> None:
         if field["type"] == "boolean"
     ]
 
-    assert switches == []
+    assert switches == ["Composition.loop"]
 
 
 @pytest.mark.parametrize(

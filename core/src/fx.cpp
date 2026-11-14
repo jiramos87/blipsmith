@@ -33,6 +33,27 @@ constexpr double kRoomFeedbackSpan = 0.28;
 constexpr double kReverbInputGain = 0.03;
 constexpr double kAllpassGain = 0.5;
 
+// 2^-16: a tail is over once it has fallen this far, 96 dB, below 16-bit audio.
+constexpr double kTailFloor = 1.0 / 65536.0;
+constexpr std::uint32_t kMaxTailPasses = 100000;
+
+// Allpasses ring at their own gain per pass whatever the room.
+constexpr double kAllpassTailGain = kAllpassGain;
+
+std::uint32_t saturate(std::uint64_t frames) {
+    return frames > 0xFFFFFFFFULL ? 0xFFFFFFFFU : static_cast<std::uint32_t>(frames);
+}
+
+std::uint32_t passes_until_floor(double gainPerPass) {
+    double level = 1.0;
+    std::uint32_t passes = 1;
+    while (level * gainPerPass > kTailFloor && passes < kMaxTailPasses) {
+        level *= gainPerPass;
+        ++passes;
+    }
+    return passes;
+}
+
 std::size_t scaled_length(int referenceSamples, int sampleRate) {
     const double scaled =
         (static_cast<double>(referenceSamples) * static_cast<double>(sampleRate)) / kReferenceRate;
@@ -101,15 +122,16 @@ double DelayLine::process(double sample) {
 
 // --- Reverb -------------------------------------------------------------------
 
-Reverb::Reverb(double roomSize, double damping, double mixWet, int sampleRate)
+Reverb::Reverb(double roomSize, double damping, double mixWet, int sampleRate, int stereoSpread)
     : feedback_(kMinRoomFeedback + kRoomFeedbackSpan * roomSize),
       damping_(damping),
       mixWet_(mixWet) {
     for (std::size_t i = 0; i < kCombs; ++i) {
-        combs_[i].buffer.assign(scaled_length(kCombLengths[i], sampleRate), 0.0);
+        combs_[i].buffer.assign(scaled_length(kCombLengths[i] + stereoSpread, sampleRate), 0.0);
     }
     for (std::size_t i = 0; i < kAllpasses; ++i) {
-        allpasses_[i].buffer.assign(scaled_length(kAllpassLengths[i], sampleRate), 0.0);
+        allpasses_[i].buffer.assign(scaled_length(kAllpassLengths[i] + stereoSpread, sampleRate),
+                                    0.0);
     }
 }
 
@@ -147,7 +169,7 @@ double Reverb::process(double sample) {
 
 // --- The chain ----------------------------------------------------------------
 
-EffectChain::EffectChain(const std::vector<Effect>& effects, int sampleRate) {
+EffectChain::EffectChain(const std::vector<Effect>& effects, int sampleRate, int stereoSpread) {
     units_.reserve(effects.size());
     for (const Effect& effect : effects) {
         Unit unit;
@@ -158,7 +180,8 @@ EffectChain::EffectChain(const std::vector<Effect>& effects, int sampleRate) {
                 unit.delay.emplace(effect.timeMs, effect.feedback, effect.mixWet, sampleRate);
                 break;
             case EffectKind::Reverb:
-                unit.reverb.emplace(effect.roomSize, effect.damping, effect.mixWet, sampleRate);
+                unit.reverb.emplace(effect.roomSize, effect.damping, effect.mixWet, sampleRate,
+                                    stereoSpread);
                 break;
             case EffectKind::Distortion:
             case EffectKind::Wavefold:
@@ -189,6 +212,45 @@ double EffectChain::process(double sample) {
         }
     }
     return value;
+}
+
+// --- Tails --------------------------------------------------------------------
+
+std::uint32_t effect_tail_frames(const Effect& effect, int sampleRate) {
+    switch (effect.kind) {
+        case EffectKind::Delay: {
+            std::uint32_t length = ms_to_frames(effect.timeMs, sampleRate);
+            if (length < 1U) {
+                length = 1U;
+            }
+            return saturate(std::uint64_t{length} * passes_until_floor(effect.feedback));
+        }
+        case EffectKind::Reverb: {
+            // The longest comb, at the right channel's spread, sets the pace; the
+            // allpasses add their own ringing on top.
+            const double feedback = kMinRoomFeedback + kRoomFeedbackSpan * effect.roomSize;
+            const std::size_t comb =
+                scaled_length(kCombLengths[3] + kReverbStereoSpread, sampleRate);
+            std::size_t allpass = 0;
+            for (const int length : kAllpassLengths) {
+                allpass += scaled_length(length + kReverbStereoSpread, sampleRate);
+            }
+            return saturate(std::uint64_t{comb} * passes_until_floor(feedback) +
+                            std::uint64_t{allpass} * passes_until_floor(kAllpassTailGain));
+        }
+        case EffectKind::Distortion:
+        case EffectKind::Wavefold:
+            break;
+    }
+    return 0;
+}
+
+std::uint32_t chain_tail_frames(const std::vector<Effect>& effects, int sampleRate) {
+    std::uint64_t total = 0;
+    for (const Effect& effect : effects) {
+        total += effect_tail_frames(effect, sampleRate);
+    }
+    return saturate(total);
 }
 
 }  // namespace blipsmith

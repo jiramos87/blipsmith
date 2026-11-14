@@ -5,19 +5,17 @@
 
 #include "bus.h"
 #include "env.h"
-#include "filter.h"
 #include "fx.h"
-#include "lofi.h"
-#include "mod.h"
-#include "noise.h"
-#include "osc.h"
+#include "music.h"
 #include "seq.h"
 #include "spec_parse.h"
-#include "tables.h"
+#include "voice_chain.h"
 #include "wav.h"
 
 namespace blipsmith {
 namespace {
+
+constexpr int kMusicVersion = 2;
 
 // One run of a voice: the whole per-voice chain, rendered into the bus from
 // `startFrame` for `frameCount` frames. A one-shot is a single run over the
@@ -27,66 +25,16 @@ namespace {
 void render_run(const Spec& spec, const Voice& voice, int voiceIndex, double frequency,
                 double velocity, const AmpEnvelope& envelope, std::uint32_t startFrame,
                 std::uint32_t frameCount, const VoiceGains& gains, MasterBus& bus) {
-    Modulation modulation(voice, frequency, spec.sampleRate);
-    NoiseSource noise(spec.seed, voiceIndex);
-    LoFiStage lofi(voice.lofi);
+    // Version 1 runs the voice's effects per note, inside the run: an echo or a
+    // room ends with the note that made it.
     EffectChain effects(voice.effects, spec.sampleRate);
-
-    // A static cutoff needs its coefficients worked out once. A modulated one is
-    // recomputed every frame, below.
-    Biquad filter;
-    if (voice.hasFilter) {
-        filter.set(biquad_coefficients(voice.filter.type, voice.filter.cutoffHz,
-                                       voice.filter.resonance, spec.sampleRate));
-    }
-    const bool sweepsCutoff = voice.hasFilter && modulation.modulatesCutoff();
-
-    std::uint32_t phase = 0;
-    for (std::uint32_t frame = 0; frame < frameCount; ++frame) {
-        modulation.step(frame);
-
-        // The chain runs oscillator -> FM -> AM -> envelope -> LFO. A voice with
-        // no modulation multiplies by exactly 1.0 and adds a zero phase offset,
-        // so its bytes are the ones B04 recorded.
-        double sample;
-        switch (voice.waveform) {
-            case Waveform::NoiseWhite:
-                sample = noise.white();
-                break;
-            case Waveform::NoisePink:
-                sample = noise.pink();
-                break;
-            default:
-                sample = oscillator_sample(voice.waveform, phase + modulation.fmPhaseOffset(),
-                                           voice.pulseDuty);
-                phase += modulation.carrierIncrement();
-                break;
-        }
-
-        sample *= modulation.amGain();
-        sample *= envelope.at(frame);
-        sample *= modulation.tremoloGain();
-
-        // ... then filter -> lo-fi -> effects. Each stage is skipped rather than
-        // run with neutral settings, so a voice that asks for none of them still
-        // renders the bytes B04 recorded.
-        if (voice.hasFilter) {
-            if (sweepsCutoff) {
-                filter.set(biquad_coefficients(
-                    voice.filter.type, voice.filter.cutoffHz * modulation.cutoffRatio(),
-                    voice.filter.resonance, spec.sampleRate));
-            }
-            sample = filter.process(sample);
-        }
-        if (voice.hasLoFi) {
-            sample = lofi.process(sample);
-        }
-        if (!voice.effects.empty()) {
-            sample = effects.process(sample);
-        }
-
-        bus.add(startFrame + frame, sample * velocity, gains);
-    }
+    run_voice_chain(spec, voice, voiceIndex, frequency, envelope, frameCount,
+                    [&](std::uint32_t frame, double sample) {
+                        if (!voice.effects.empty()) {
+                            sample = effects.process(sample);
+                        }
+                        bus.add(startFrame + frame, sample * velocity, gains);
+                    });
 }
 
 // A voice on a track answers to both: the levels add in decibels and the pans
@@ -150,13 +98,26 @@ void render_composition(const Spec& spec, std::uint32_t frames, MasterBus& bus) 
 
 }  // namespace
 
-RenderOutput render_spec_json(const std::string& specJson) {
+RenderOutput render_spec_json(const std::string& specJson, bool wantStems) {
     const Spec spec = parse_spec(specJson);
 
     RenderOutput out;
     out.sampleRate = spec.sampleRate;
     out.channels = spec.channels;
     out.frames = ms_to_frames(spec.durationMs, spec.sampleRate);
+
+    // Version 2 is the music mode, a path of its own; version 1 never enters it,
+    // which is what keeps every sound rendered before it byte-identical.
+    if (spec.version == kMusicVersion && spec.hasComposition) {
+        MusicMix music = render_music(spec, out.frames, wantStems);
+        out.features = measure(music.mix, spec.sampleRate, spec.channels);
+        out.wav = encode_wav_pcm16(music.mix, spec.sampleRate, spec.channels);
+        for (const std::vector<double>& stem : music.stems) {
+            out.stems.push_back(encode_wav_pcm16(stem, spec.sampleRate, spec.channels));
+        }
+        out.stemClipped = music.stemClipped;
+        return out;
+    }
 
     MasterBus bus(out.frames, spec.channels);
 

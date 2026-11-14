@@ -17,12 +17,26 @@
 #pragma once
 
 #include <cstddef>
+#include <cstdint>
 #include <optional>
 #include <vector>
 
 #include "spec_parse.h"
 
 namespace blipsmith {
+
+// Freeverb's stereo spread, in samples at 44.1 kHz: the right channel's combs
+// and allpasses run this much longer, so a stereo room is wide rather than the
+// same tail twice.
+inline constexpr int kReverbStereoSpread = 23;
+
+// How long an effect keeps sounding after its input stops, in frames: until it
+// has fallen 96 dB (a factor of 2^-16). Distortion and wavefold have no tail.
+// Worked out by repeated multiplication, so the bound is as exact as the audio.
+std::uint32_t effect_tail_frames(const Effect& effect, int sampleRate);
+
+// A chain's tail: the tails of its effects in series add up.
+std::uint32_t chain_tail_frames(const std::vector<Effect>& effects, int sampleRate);
 
 // Exposed for the shaping tests: the waveshapers with no dry blend.
 double soft_clip(double sample);
@@ -46,7 +60,9 @@ private:
 // scales with the room.
 class Reverb {
 public:
-    Reverb(double roomSize, double damping, double mixWet, int sampleRate);
+    // `stereoSpread` lengthens every comb and allpass by that many samples at
+    // 44.1 kHz; 0 is the mono room version 1 has always rendered.
+    Reverb(double roomSize, double damping, double mixWet, int sampleRate, int stereoSpread = 0);
 
     double process(double sample);
 
@@ -74,7 +90,7 @@ private:
 
 class EffectChain {
 public:
-    EffectChain(const std::vector<Effect>& effects, int sampleRate);
+    EffectChain(const std::vector<Effect>& effects, int sampleRate, int stereoSpread = 0);
 
     double process(double sample);
 
