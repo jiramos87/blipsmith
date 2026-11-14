@@ -40,7 +40,7 @@ claude mcp add blipsmith -- uv run --project /path/to/blipsmith blipsmith-mcp
 ```
 
 Then ask for a sound. The agent holds one session, shaped like a synth front
-panel: 30 tools, grouped so that one call sets one block of related parameters.
+panel: 32 tools, grouped so that one call sets one block of related parameters.
 
 > **You:** Make me a laser shot, but heavier and dirtier than the stock one.
 
@@ -61,7 +61,7 @@ set_effects([{"kind": "distortion", "drive": 0.7}])
 render(name="heavy-laser")
 ```
 
-The render comes back with both files, a plain-language explanation, and six
+The render comes back with both files, a plain-language explanation, and eight
 measurements:
 
 ```json
@@ -76,7 +76,9 @@ measurements:
     "rmsDbfs": -8.79,
     "estimatedFundamentalHz": 1817.94,
     "spectralCentroidHz": 3390.48,
-    "attackTimeMs": 6.26
+    "attackTimeMs": 6.26,
+    "integratedLufs": -7.58,
+    "truePeakDbtp": 0.3
   },
   "warnings": []
 }
@@ -84,7 +86,10 @@ measurements:
 
 The features are the point (rounded above; the tool returns full precision). The
 agent cannot hear, so it steers by numbers: too bright means lower
-`spectralCentroidHz`, too soft an onset means shorter `attackTimeMs`. One
+`spectralCentroidHz`, too soft an onset means shorter `attackTimeMs`.
+`integratedLufs` and `truePeakDbtp` read loudness the way a broadcast meter does
+(ITU-R BS.1770, 4x oversampled peak); a true peak a little above the sample peak
+is normal and is why a file meant for a lossy encoder wants some headroom. One
 caveat worth knowing: `estimatedFundamentalHz` measures the whole file at once,
 so on a voice with a pitch sweep like this one it lands somewhere in the sweep
 rather than on the fundamental you set. It is a reliable number for steady tones
@@ -166,6 +171,39 @@ can clip.
 
 `get_schema()` returns every field with its type, range and default, so an agent
 can author a valid spec without guessing.
+
+### The music mode
+
+`"version": 2` turns a composition into a whole piece in one render. Everything
+above still holds, and a spec without it renders exactly as it always has.
+
+- **Any number of tracks**, 1 to 32, each with an optional `name`, and up to 64
+  voices.
+- **A kit on one track.** A voice with a `key` (a MIDI note) plays only the
+  notes of that key, at its own pitch, so a kick, a snare and two hats share one
+  track and one drum part. Voices without a key play every note, as before.
+- **Effects with tails.** A voice's own effects run once over all its notes, so
+  an echo rings past the note that made it. A track has its own stereo
+  `effects`, and `master.effects` (delay and reverb) is the room every track
+  shares.
+- **The loop.** With `"loop": true` the file is exactly `durationMs`: every
+  release and every effect tail that runs past the end is wrapped onto the
+  start, so the file plays round without a seam.
+- **Stems** from the same render, one WAV per track at the same gain as the mix,
+  adding up to it: `render --stems`, or `stems=true` on the MCP `render`.
+
+For a program, the same render is a library call, with no files and no text to
+parse:
+
+```python
+from blipsmith import render_sound
+
+sound = render_sound(spec, stems=True)
+sound.wav, sound.features["integratedLufs"], [stem.wav for stem in sound.stems]
+```
+
+and `blipsmith render piece.spec.json --json` prints the result as one JSON
+object. The behaviour is specified in `docs/prd/blipsmith-music-mode.md`.
 
 ## Determinism, and how it is enforced
 

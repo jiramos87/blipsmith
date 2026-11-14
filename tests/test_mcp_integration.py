@@ -57,6 +57,9 @@ SESSION_TOOLS = (
     "add_notes",
     "set_steps",
     "clear_track",
+    # docs/prd/blipsmith-music-mode.md
+    "add_track",
+    "remove_track",
     "set_render_options",
     "render",
     "export_spec",
@@ -665,6 +668,9 @@ def test_every_pinned_tool_is_exercised(tmp_path: Path) -> None:
         await mcp.call("set_steps", track=2, steps=[{"index": 0}], stepsPerBeat=4)
         await mcp.call("clear_track", track=2)
         await mcp.call("remove_voice", index=1)
+        await mcp.call("set_render_options", version=2)
+        added = await mcp.call("add_track")
+        await mcp.call("remove_track", track=added["track"])
         await mcp.call("explain_session")
         await mcp.call("render", outDir=str(tmp_path))
         exported = await mcp.call("export_spec")
@@ -705,3 +711,51 @@ def test_the_verify_gate_boots_the_server() -> None:
     the skip into a real handshake."""
     assert importlib.util.find_spec("blipsmith.mcp_server") is not None
     assert "python -m blipsmith.mcp_server --boot-check" in VERIFY.read_text()
+
+
+# --- The music mode -----------------------------------------------------------
+
+
+def test_a_music_session_builds_a_kit_track_with_a_room(tmp_path: Path) -> None:
+    """The music mode played the way an agent would: switch it on, add a track,
+    make a kit, give the track and the master a room, loop it, render stems."""
+
+    async def scenario(mcp: Mcp) -> None:
+        refused = await mcp.call("set_tempo_swing", loop=True)
+        assert refused["status"] == "invalid_spec"
+        assert "version=2" in refused["error"]["message"]
+
+        await mcp.call("set_render_options", version=2, durationMs=2000.0, name="beat")
+        added = await mcp.call("add_track")
+        assert added["track"] == 5
+        await mcp.call("new_voice", waveform="sine")
+        await mcp.call("set_voice_output", track=5, key=36)
+        await mcp.call("new_voice", waveform="noise_white")
+        await mcp.call("set_voice_output", track=5, key=38)
+        await mcp.call(
+            "set_track", track=5, name="kit", effects=[{"kind": "reverb", "mixWet": 0.2}]
+        )
+        await mcp.call("set_master", effects=[{"kind": "delay", "timeMs": 250.0}])
+        await mcp.call("set_tempo_swing", tempoBpm=120.0, loop=True)
+        await mcp.call(
+            "add_notes",
+            track=5,
+            notes=[{"startBeat": 0, "midiNote": 36}, {"startBeat": 1, "midiNote": 38}],
+        )
+
+        spec = await mcp.spec()
+        assert spec["version"] == 2
+        assert [v["key"] for v in spec["voices"]] == [36, 38]
+        assert spec["composition"]["loop"] is True
+        assert spec["composition"]["tracks"][5]["name"] == "kit"
+
+        removal = await mcp.call("remove_track", track=5)
+        assert removal["status"] == "invalid_spec"
+
+        result = await mcp.call("render", outDir=str(tmp_path), stems=True)
+        assert result["status"] == "rendered_ok"
+        assert len(result["stems"]) == 6
+        assert Path(result["stems"][5]["wavPath"]).name == "beat.stem-05-kit.wav"
+        assert "Track 6 (kit)" in result["explanation"]
+
+    play(scenario)

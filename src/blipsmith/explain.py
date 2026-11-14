@@ -186,11 +186,38 @@ def explain_spec(spec: SoundSpec) -> str:
             f"A composition at {_number(spec.composition.tempoBpm)} BPM with "
             f"{played} of {len(spec.composition.tracks)} tracks playing."
         )
+        if spec.is_music:
+            lines.extend(_music_lines(spec))
 
     for index, voice in enumerate(spec.voices):
-        lines.append(f"Voice {index + 1}: {explain_voice(voice, channels)}.")
+        kit = f" (kit key {_note_name(voice.key)})" if voice.key is not None else ""
+        lines.append(f"Voice {index + 1}{kit}: {explain_voice(voice, channels)}.")
 
+    if spec.master.effects:
+        lines.append(f"The master room: {_join([_effect_phrase(e) for e in spec.master.effects])}.")
     lines.append(
         f"The master bus normalizes the mix to {_number(spec.master.limiter.targetDbfs)} dBFS."
     )
     return " ".join(lines)
+
+
+def _music_lines(spec: SoundSpec) -> list[str]:
+    """What the music mode adds: how the file ends, and each track's own name
+    and effects. A voice's effects run once over all its notes, so they ring on."""
+    assert spec.composition is not None
+    lines = [
+        "Music mode: the file is exactly the loop, every tail wrapped onto its start."
+        if spec.composition.loop
+        else "Music mode: tails past the end are cut."
+    ]
+    for index, track in enumerate(spec.composition.tracks):
+        if track.name is None and not track.effects:
+            continue
+        label = f"Track {index + 1}" + (f" ({track.name})" if track.name else "")
+        if track.effects:
+            lines.append(
+                f"{label} runs through {_join([_effect_phrase(e) for e in track.effects])}."
+            )
+        else:
+            lines.append(f"{label}.")
+    return lines

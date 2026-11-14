@@ -30,7 +30,7 @@ from enum import Enum
 from typing import Any
 
 from blipsmith.presets import load_preset as read_preset
-from blipsmith.ranges import TRACK_COUNT
+from blipsmith.ranges import MUSIC_SPEC_VERSION, TRACK_COUNT
 from blipsmith.result import SpecWarning, invalid_spec
 from blipsmith.spec import (
     AmMode,
@@ -112,14 +112,29 @@ class Session:
         return composition
 
     def _track(self, data: SpecData, index: int) -> dict[str, Any]:
-        if not 0 <= index < TRACK_COUNT:
-            raise invalid_spec(
-                f"track {index} does not exist; there are exactly {TRACK_COUNT} tracks, "
-                f"numbered 0 to {TRACK_COUNT - 1}.",
-                field="composition.tracks",
-            )
-        track: dict[str, Any] = self._composition(data)["tracks"][index]
+        tracks = self._composition(data)["tracks"]
+        if not 0 <= index < len(tracks):
+            if data.get("version") == MUSIC_SPEC_VERSION:
+                message = (
+                    f"track {index} does not exist; there are {len(tracks)} tracks, numbered "
+                    f"0 to {len(tracks) - 1}. add_track makes another."
+                )
+            else:
+                message = (
+                    f"track {index} does not exist; there are exactly {TRACK_COUNT} tracks, "
+                    f"numbered 0 to {TRACK_COUNT - 1}."
+                )
+            raise invalid_spec(message, field="composition.tracks")
+        track: dict[str, Any] = tracks[index]
         return track
+
+    def _music(self, data: SpecData, what: str) -> None:
+        if data.get("version") != MUSIC_SPEC_VERSION:
+            raise invalid_spec(
+                f"{what} belongs to the music mode: call set_render_options with "
+                f"version={MUSIC_SPEC_VERSION} first.",
+                field="version",
+            )
 
     # --- Voices ---------------------------------------------------------------
 
@@ -327,23 +342,39 @@ class Session:
         return self._apply(mutate)
 
     def set_voice_output(
-        self, pan: float | None = None, mixDb: float | None = None, track: int | None = None
+        self,
+        pan: float | None = None,
+        mixDb: float | None = None,
+        track: int | None = None,
+        key: int | None = None,
     ) -> list[SpecWarning]:
+        """`key` (music mode) makes the voice a kit piece; -1 clears it."""
+
         def mutate(data: SpecData) -> None:
-            self._voice(data).update(_given(pan=pan, mixDb=mixDb, track=track))
+            voice = self._voice(data)
+            voice.update(_given(pan=pan, mixDb=mixDb, track=track))
+            if key is not None:
+                self._music(data, "a kit key")
+                voice["key"] = None if key < 0 else key
 
         return self._apply(mutate)
 
     # --- Master and render options -------------------------------------------
 
     def set_master(
-        self, gainDb: float | None = None, targetDbfs: float | None = None
+        self,
+        gainDb: float | None = None,
+        targetDbfs: float | None = None,
+        effects: list[dict[str, Any]] | None = None,
     ) -> list[SpecWarning]:
         def mutate(data: SpecData) -> None:
             master = data["master"]
             master.update(_given(gainDb=gainDb))
             if targetDbfs is not None:
                 master["limiter"] = {**master.get("limiter", {}), "targetDbfs": targetDbfs}
+            if effects is not None:
+                self._music(data, "a master effect")
+                master["effects"] = list(effects)
 
         return self._apply(mutate)
 
@@ -354,11 +385,21 @@ class Session:
         channels: int | None = None,
         seed: int | None = None,
         name: str | None = None,
+        version: int | None = None,
     ) -> list[SpecWarning]:
         def mutate(data: SpecData) -> None:
             data.update(
-                _given(durationMs=durationMs, sampleRate=sampleRate, channels=channels, seed=seed)
+                _given(
+                    durationMs=durationMs,
+                    sampleRate=sampleRate,
+                    channels=channels,
+                    seed=seed,
+                    version=version,
+                )
             )
+            if version == MUSIC_SPEC_VERSION:
+                # The music mode is a composition mode.
+                self._composition(data)
             if name is not None:
                 data["meta"] = {**data.get("meta", {}), "name": name}
 
@@ -367,18 +408,67 @@ class Session:
     # --- Composition ----------------------------------------------------------
 
     def set_tempo_swing(
-        self, tempoBpm: float | None = None, swing: float | None = None
+        self, tempoBpm: float | None = None, swing: float | None = None, loop: bool | None = None
     ) -> list[SpecWarning]:
         def mutate(data: SpecData) -> None:
-            self._composition(data).update(_given(tempoBpm=tempoBpm, swing=swing))
+            composition = self._composition(data)
+            composition.update(_given(tempoBpm=tempoBpm, swing=swing))
+            if loop is not None:
+                self._music(data, "the loop")
+                composition["loop"] = loop
 
         return self._apply(mutate)
 
     def set_track(
-        self, track: int, gainDb: float | None = None, pan: float | None = None
+        self,
+        track: int,
+        gainDb: float | None = None,
+        pan: float | None = None,
+        name: str | None = None,
+        effects: list[dict[str, Any]] | None = None,
     ) -> list[SpecWarning]:
+        """`name` and `effects` (the track's insert chain) are music mode."""
+
         def mutate(data: SpecData) -> None:
-            self._track(data, track).update(_given(gainDb=gainDb, pan=pan))
+            entry = self._track(data, track)
+            entry.update(_given(gainDb=gainDb, pan=pan))
+            if name is not None:
+                self._music(data, "a track name")
+                entry["name"] = name or None
+            if effects is not None:
+                self._music(data, "a track effect")
+                entry["effects"] = list(effects)
+
+        return self._apply(mutate)
+
+    def add_track(self) -> tuple[int, list[SpecWarning]]:
+        """Music mode: append an empty track and return its index."""
+        index = len(self._spec.composition.tracks) if self._spec.composition else TRACK_COUNT
+
+        def mutate(data: SpecData) -> None:
+            self._music(data, "adding a track")
+            self._composition(data)["tracks"].append({})
+
+        return index, self._apply(mutate)
+
+    def remove_track(self, track: int) -> list[SpecWarning]:
+        """Music mode: remove a track no voice plays on; the voices on later
+        tracks move down with their tracks."""
+
+        def mutate(data: SpecData) -> None:
+            self._music(data, "removing a track")
+            self._track(data, track)
+            playing = [i for i, voice in enumerate(data["voices"]) if voice["track"] == track]
+            if playing:
+                raise invalid_spec(
+                    f"voices {playing} play on track {track}; move them with "
+                    "set_voice_output or remove them first.",
+                    field="composition.tracks",
+                )
+            del data["composition"]["tracks"][track]
+            for voice in data["voices"]:
+                if voice["track"] > track:
+                    voice["track"] -= 1
 
         return self._apply(mutate)
 

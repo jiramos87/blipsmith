@@ -94,7 +94,8 @@ def build_server(session: Session | None = None) -> FastMCP:
 
     @server.tool()
     def new_voice(waveform: str) -> dict[str, Any]:
-        """Add a voice and select it. Up to 8 voices; the ninth is refused."""
+        """Add a voice and select it. Up to 8 voices (64 in the music mode); one
+        more is refused."""
         try:
             index, warnings = state.new_voice(waveform)
         except SpecError as exc:
@@ -199,20 +200,29 @@ def build_server(session: Session | None = None) -> FastMCP:
 
     @server.tool()
     def set_voice_output(
-        pan: float | None = None, mixDb: float | None = None, track: int | None = None
+        pan: float | None = None,
+        mixDb: float | None = None,
+        track: int | None = None,
+        key: int | None = None,
     ) -> dict[str, Any]:
         """Where this voice sits: stereo position, level into the bus, and which
-        of the five mixer tracks it plays on."""
-        return _guarded(lambda: state.set_voice_output(pan, mixDb, track))
+        mixer track it plays on. Music mode: `key` (a MIDI note) makes it a kit
+        piece that plays only notes of that key, at its own pitch; -1 clears it."""
+        return _guarded(lambda: state.set_voice_output(pan, mixDb, track, key))
 
     # --- Master and render options -------------------------------------------
 
     @server.tool()
-    def set_master(gainDb: float | None = None, targetDbfs: float | None = None) -> dict[str, Any]:
+    def set_master(
+        gainDb: float | None = None,
+        targetDbfs: float | None = None,
+        effects: list[dict[str, Any]] | None = None,
+    ) -> dict[str, Any]:
         """The master bus. `targetDbfs` is the peak every render normalizes to,
         and is the control that actually sets loudness: the limiter runs after
-        `gainDb` and cannot be switched off."""
-        return _guarded(lambda: state.set_master(gainDb, targetDbfs))
+        `gainDb` and cannot be switched off. Music mode: `effects` is the shared
+        room every track goes through, delay and reverb only."""
+        return _guarded(lambda: state.set_master(gainDb, targetDbfs, effects))
 
     @server.tool()
     def set_render_options(
@@ -221,30 +231,56 @@ def build_server(session: Session | None = None) -> FastMCP:
         channels: int | None = None,
         seed: int | None = None,
         name: str | None = None,
+        version: int | None = None,
     ) -> dict[str, Any]:
-        """Length, format, seed, and the filename stem the render writes to."""
+        """Length, format, seed, and the filename stem the render writes to.
+        `version` 2 turns on the music mode (any number of tracks, kit keys,
+        track and master effects with tails, the loop, stems)."""
         return _guarded(
-            lambda: state.set_render_options(durationMs, sampleRate, channels, seed, name)
+            lambda: state.set_render_options(durationMs, sampleRate, channels, seed, name, version)
         )
 
     # --- Composition ----------------------------------------------------------
 
     @server.tool()
     def set_tempo_swing(
-        tempoBpm: float | None = None, swing: float | None = None
+        tempoBpm: float | None = None, swing: float | None = None, loop: bool | None = None
     ) -> dict[str, Any]:
         """Tempo and shuffle for the composition, starting one if there is none.
         `swing` delays every offbeat position on a track's grid by that fraction
         of a step. Starting a composition switches the render to stereo, its
-        documented default; set_render_options can change that back."""
-        return _guarded(lambda: state.set_tempo_swing(tempoBpm, swing))
+        documented default; set_render_options can change that back. Music
+        mode: `loop` makes the file exactly the loop, every tail wrapped onto
+        its start."""
+        return _guarded(lambda: state.set_tempo_swing(tempoBpm, swing, loop))
 
     @server.tool()
     def set_track(
-        track: int, gainDb: float | None = None, pan: float | None = None
+        track: int,
+        gainDb: float | None = None,
+        pan: float | None = None,
+        name: str | None = None,
+        effects: list[dict[str, Any]] | None = None,
     ) -> dict[str, Any]:
-        """Level and stereo position for one of the five mixer tracks (0 to 4)."""
-        return _guarded(lambda: state.set_track(track, gainDb, pan))
+        """Level and stereo position for one mixer track (five, 0 to 4, unless
+        the music mode added more). Music mode: `name` labels its stem, and
+        `effects` is its own insert chain, run once over all it plays."""
+        return _guarded(lambda: state.set_track(track, gainDb, pan, name, effects))
+
+    @server.tool()
+    def add_track() -> dict[str, Any]:
+        """Music mode: add an empty track at the end. Returns its index."""
+        try:
+            index, warnings = state.add_track()
+        except SpecError as exc:
+            return _refused(exc)
+        return _ok(warnings, track=index)
+
+    @server.tool()
+    def remove_track(track: int) -> dict[str, Any]:
+        """Music mode: remove a track no voice plays on. Voices on later tracks
+        move down with them."""
+        return _guarded(lambda: state.remove_track(track))
 
     @server.tool()
     def add_notes(track: int, notes: list[dict[str, Any]]) -> dict[str, Any]:
@@ -272,15 +308,23 @@ def build_server(session: Session | None = None) -> FastMCP:
 
     @server.tool()
     def render(
-        outDir: str | None = None, name: str | None = None, overwrite: bool = False
+        outDir: str | None = None,
+        name: str | None = None,
+        overwrite: bool = False,
+        stems: bool = False,
     ) -> dict[str, Any]:
         """Render the session to a WAV plus the spec that regenerates it.
 
-        Returns both paths, the six acoustic features measured from the finished
-        audio, a plain-language explanation, and any clamp warnings. Refuses to
-        replace an existing file unless `overwrite` is set."""
+        Returns both paths, the acoustic features measured from the finished
+        audio (loudness and true peak included), a plain-language explanation,
+        and any clamp warnings. Refuses to replace an existing file unless
+        `overwrite` is set. Music mode: `stems` also writes one WAV per track."""
         result = render_to_files(
-            state.spec.model_dump(mode="json"), out_dir=outDir, name=name, overwrite=overwrite
+            state.spec.model_dump(mode="json"),
+            out_dir=outDir,
+            name=name,
+            overwrite=overwrite,
+            stems=stems,
         )
         return dict(result.model_dump(mode="json"))
 
@@ -334,9 +378,11 @@ def build_server(session: Session | None = None) -> FastMCP:
         outDir: str | None = None,
         name: str | None = None,
         overwrite: bool = False,
+        stems: bool = False,
     ) -> dict[str, Any]:
-        """Render a spec passed in directly, without touching the session."""
-        result = render_to_files(spec, out_dir=outDir, name=name, overwrite=overwrite)
+        """Render a spec passed in directly, without touching the session.
+        Music mode: `stems` also writes one WAV per track."""
+        result = render_to_files(spec, out_dir=outDir, name=name, overwrite=overwrite, stems=stems)
         return dict(result.model_dump(mode="json"))
 
     @server.tool()
