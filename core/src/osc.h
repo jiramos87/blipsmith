@@ -36,6 +36,10 @@ std::uint32_t phase_increment(double frequencyHz, int sampleRate);
 // move the increment while the sound plays.
 std::uint32_t turns_to_increment(double turnsPerSample);
 
+// A point in a cycle given in turns, as a phase: whole turns fold away. A
+// unison copy starts its partials and operators here.
+std::uint32_t turns_to_phase(double turns);
+
 // Returns a sample in [-1, 1]. Noise waveforms return 0 here: they carry state
 // and live in NoiseSource.
 double oscillator_sample(Waveform waveform, std::uint32_t phase, double pulseDuty);

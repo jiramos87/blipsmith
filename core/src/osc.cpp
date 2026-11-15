@@ -55,6 +55,18 @@ std::uint32_t phase_increment(double frequencyHz, int sampleRate) {
     return turns_to_increment(frequencyHz / static_cast<double>(sampleRate));
 }
 
+std::uint32_t turns_to_phase(double turns) {
+    if (!(turns > -kMaxTurnsPerSample) || turns > kMaxTurnsPerSample) {  // also NaN
+        return 0U;
+    }
+    double left = turns - static_cast<double>(static_cast<std::int64_t>(turns));
+    if (left < 0.0) {
+        left += 1.0;
+    }
+    const double scaled = left * kPhaseScale;
+    return scaled >= kPhaseScale ? 0U : static_cast<std::uint32_t>(scaled);
+}
+
 double sine_at_phase(std::uint32_t phase) {
     return interpolated_sine(phase);
 }

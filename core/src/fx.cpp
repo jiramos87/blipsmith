@@ -3,6 +3,7 @@
 #include <cstdint>
 
 #include "env.h"
+#include "osc.h"
 
 namespace blipsmith {
 namespace {
@@ -167,6 +168,64 @@ double Reverb::process(double sample) {
     return blend(sample, wet, mixWet_);
 }
 
+// --- Chorus -------------------------------------------------------------------
+
+namespace {
+
+// The Lagrange read needs a point on each side of its own, so it never reads
+// closer to now than this.
+constexpr double kChorusMinDelay = 2.0;
+
+std::uint32_t power_of_two_at_least(std::uint64_t value) {
+    std::uint32_t size = 4;
+    while (size < value && size < 0x80000000U) {
+        size <<= 1U;
+    }
+    return size;
+}
+
+}  // namespace
+
+Chorus::Chorus(double delayMs, double depthMs, double rateHz, double mixWet, int sampleRate,
+               bool quarterTurn)
+    : mixWet_(mixWet) {
+    const double perMs = static_cast<double>(sampleRate) / 1000.0;
+    centre_ = delayMs * perMs;
+    depth_ = depthMs * perMs;
+    const std::uint64_t reach = static_cast<std::uint64_t>(centre_ + depth_) + 4U;
+    buffer_.assign(power_of_two_at_least(reach), 0.0);
+    mask_ = static_cast<std::uint32_t>(buffer_.size()) - 1U;
+    increment_ = phase_increment(rateHz, sampleRate);
+    phase_ = quarterTurn ? kQuarterTurn : 0U;
+}
+
+// The line `delay` samples back, 0 being the newest sample.
+double Chorus::read(double delay) const {
+    const std::uint32_t whole = static_cast<std::uint32_t>(delay);
+    const double mu = delay - static_cast<double>(whole);
+    const double before = buffer_[(write_ - (whole - 1U)) & mask_];
+    const double at = buffer_[(write_ - whole) & mask_];
+    const double after = buffer_[(write_ - (whole + 1U)) & mask_];
+    const double far = buffer_[(write_ - (whole + 2U)) & mask_];
+    const double m1 = mu - 1.0;
+    const double m2 = mu - 2.0;
+    const double p1 = mu + 1.0;
+    return -mu * m1 * m2 / 6.0 * before + p1 * m1 * m2 / 2.0 * at - p1 * mu * m2 / 2.0 * after +
+           p1 * mu * m1 / 6.0 * far;
+}
+
+double Chorus::process(double sample) {
+    buffer_[write_] = sample;
+    double delay = centre_ + depth_ * sine_at_phase(phase_);
+    if (delay < kChorusMinDelay) {
+        delay = kChorusMinDelay;
+    }
+    const double wet = read(delay);
+    write_ = (write_ + 1U) & mask_;
+    phase_ += increment_;
+    return blend(sample, wet, mixWet_);
+}
+
 // --- The chain ----------------------------------------------------------------
 
 EffectChain::EffectChain(const std::vector<Effect>& effects, int sampleRate, int stereoSpread) {
@@ -182,6 +241,10 @@ EffectChain::EffectChain(const std::vector<Effect>& effects, int sampleRate, int
             case EffectKind::Reverb:
                 unit.reverb.emplace(effect.roomSize, effect.damping, effect.mixWet, sampleRate,
                                     stereoSpread);
+                break;
+            case EffectKind::Chorus:
+                unit.chorus.emplace(effect.delayMs, effect.depthMs, effect.rateHz, effect.mixWet,
+                                    sampleRate, stereoSpread != 0);
                 break;
             case EffectKind::Distortion:
             case EffectKind::Wavefold:
@@ -208,6 +271,9 @@ double EffectChain::process(double sample) {
                 break;
             case EffectKind::Reverb:
                 value = unit.reverb->process(value);
+                break;
+            case EffectKind::Chorus:
+                value = unit.chorus->process(value);
                 break;
         }
     }
@@ -237,6 +303,11 @@ std::uint32_t effect_tail_frames(const Effect& effect, int sampleRate) {
             }
             return saturate(std::uint64_t{comb} * passes_until_floor(feedback) +
                             std::uint64_t{allpass} * passes_until_floor(kAllpassTailGain));
+        }
+        case EffectKind::Chorus: {
+            // The swing's far end, plus the read's own reach.
+            const std::uint32_t reach = ms_to_frames(effect.delayMs + effect.depthMs, sampleRate);
+            return saturate(std::uint64_t{reach} + 3U);
         }
         case EffectKind::Distortion:
         case EffectKind::Wavefold:

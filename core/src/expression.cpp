@@ -1,5 +1,6 @@
 #include "expression.h"
 
+#include "additive.h"
 #include "env.h"
 #include "fm4.h"
 #include "modal.h"
@@ -21,6 +22,13 @@ constexpr double kMaxAttackMs = 10000.0;
 
 constexpr double kCentsPerOctave = 1200.0;
 constexpr double kSemitonesPerOctave = 12.0;
+
+double clamp_unit(double value) {
+    if (value < 0.0) {
+        return 0.0;
+    }
+    return value > 1.0 ? 1.0 : value;
+}
 
 }  // namespace
 
@@ -79,6 +87,20 @@ void apply_touch(const Voice& voice, double velocity, Voice& out) {
             brightness = 1.0;
         }
         out.modal.brightness = brightness;
+    }
+    // On a wavetable they move the read position, start and end alike: tables run
+    // dark to bright, so a harder note reads a brighter frame.
+    if (voice.hasWavetable && touch.cutoffOctaves != 0.0) {
+        const double shift = touch.cutoffOctaves * t / kWavetableTouchOctaves;
+        out.wavetable.position = clamp_unit(voice.wavetable.position + shift);
+        if (voice.wavetable.positionEnd >= 0.0) {
+            out.wavetable.positionEnd = clamp_unit(voice.wavetable.positionEnd + shift);
+        }
+    }
+    // On an additive voice they move the brightness, as on a string.
+    if (voice.hasAdditive && touch.cutoffOctaves != 0.0) {
+        out.additive.brightness = clamp_unit(
+            voice.additive.brightness + touch.cutoffOctaves * t / kAdditiveBrightnessOctaves);
     }
     // The ceiling below Nyquist is the filter's own, applied where it designs.
     if (voice.hasFilter && touch.cutoffOctaves != 0.0) {

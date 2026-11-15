@@ -10,6 +10,7 @@
 #include <cstdint>
 #include <optional>
 
+#include "additive.h"
 #include "env.h"
 #include "expression.h"
 #include "filter.h"
@@ -24,17 +25,26 @@
 
 namespace blipsmith {
 
+// One copy of a voice in a unison stack: where its cycle starts and which noise
+// stream it draws. The plain voice is one copy at phase zero on its own stream.
+struct VoiceCopy {
+    std::uint32_t startPhase = 0;
+    // -1 means the voice's own stream.
+    int noiseStream = -1;
+};
+
 template <typename Sink>
 void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, double frequency,
                      const AmpEnvelope& envelope, const PitchExpression& expression,
-                     std::uint32_t frameCount, Sink&& sink) {
+                     const VoiceCopy& copy, std::uint32_t frameCount, Sink&& sink) {
     Modulation modulation(voice, frequency, spec.sampleRate, expression);
-    NoiseSource noise(spec.seed, voiceIndex);
+    NoiseSource noise(spec.seed, copy.noiseStream < 0 ? voiceIndex : copy.noiseStream);
     LoFiStage lofi(voice.lofi);
+    const double startTurns = static_cast<double>(copy.startPhase) / kPhaseScale;
     // Four-operator FM replaces the oscillator; its phases start on the note.
     std::optional<FourOperator> operators;
     if (voice.hasFm4) {
-        operators.emplace(voice.fm4, spec.sampleRate);
+        operators.emplace(voice.fm4, spec.sampleRate, startTurns);
     }
     // So does a string; its line is filled on the note's first frame.
     std::optional<PluckedString> string;
@@ -46,6 +56,13 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
     if (voice.hasModal) {
         modal.emplace(voice.modal, spec.sampleRate);
     }
+    // And a wavetable or an additive block, summed from sine partials.
+    std::optional<AdditiveSource> additive;
+    if (voice.hasWavetable) {
+        additive.emplace(voice.wavetable, spec.sampleRate, startTurns);
+    } else if (voice.hasAdditive) {
+        additive.emplace(voice.additive, spec.sampleRate, startTurns);
+    }
 
     // A static cutoff needs its coefficients worked out once. A modulated one is
     // recomputed every frame, below.
@@ -56,7 +73,7 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
     }
     const bool sweepsCutoff = voice.hasFilter && modulation.modulatesCutoff();
 
-    std::uint32_t phase = 0;
+    std::uint32_t phase = copy.startPhase;
     for (std::uint32_t frame = 0; frame < frameCount; ++frame) {
         modulation.step(frame);
 
@@ -82,6 +99,10 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
                 }
                 if (modal) {
                     sample = modal->sample(modulation.carrierTurns());
+                    break;
+                }
+                if (additive) {
+                    sample = additive->sample(modulation.carrierTurns());
                     break;
                 }
                 sample = oscillator_sample(voice.waveform, phase + modulation.fmPhaseOffset(),
@@ -111,6 +132,15 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
 
         sink(frame, sample);
     }
+}
+
+// A note as one copy of the voice: every voice without unison.
+template <typename Sink>
+void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, double frequency,
+                     const AmpEnvelope& envelope, const PitchExpression& expression,
+                     std::uint32_t frameCount, Sink&& sink) {
+    run_voice_chain(spec, voice, voiceIndex, frequency, envelope, expression, VoiceCopy{},
+                    frameCount, static_cast<Sink&&>(sink));
 }
 
 // A note with no expression: version 1, and a music voice with none set.

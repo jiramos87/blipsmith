@@ -42,7 +42,7 @@ const Fm4Algorithm& fm4_algorithm(int index) {
     return kFm4AlgorithmTable[index < 0 || index >= kFm4Algorithms ? 0 : index];
 }
 
-FourOperator::FourOperator(const Fm4& fm4, int sampleRate) {
+FourOperator::FourOperator(const Fm4& fm4, int sampleRate, double startTurns) {
     algorithm_ = fm4_algorithm(fm4.algorithm);
 
     int carriers = 0;
@@ -70,6 +70,11 @@ FourOperator::FourOperator(const Fm4& fm4, int sampleRate) {
     // level 1 plays at the level of a plain sine.
     carrierScale_ = 1.0 / static_cast<double>(carriers);
     feedbackTurns_ = fm4.feedback * kFeedbackTurns;
+    if (startTurns != 0.0) {
+        for (Op& op : ops_) {
+            op.phase = turns_to_phase(startTurns * (op.fixed ? 1.0 : op.frequencyScale));
+        }
+    }
 }
 
 // Up over the attack, then a squared fall to the sustain level (fast, then

@@ -27,6 +27,7 @@
 #include <vector>
 
 #include "spec_parse.h"
+#include "voice_chain.h"
 
 namespace blipsmith {
 
@@ -44,6 +45,17 @@ MusicMix render_music(const Spec& spec, std::uint32_t frames, bool wantStems);
 
 // Frames rendered past the end before the fold, for a looped spec.
 std::uint32_t music_tail_frames(const Spec& spec, std::uint32_t frames);
+
+// One copy of a unison stack: its pitch over the note's, its level, and where
+// it starts. Copies spread evenly across the detune, each at one over the root
+// of the count, so the stack sounds about as loud as one copy.
+struct UnisonCopy {
+    double ratio = 1.0;
+    double gain = 1.0;
+    VoiceCopy copy;
+};
+
+std::vector<UnisonCopy> unison_copies(const Unison& unison, std::uint32_t seed, int voiceIndex);
 
 // Whether `voice` plays a note of `midiNote` (-1 for "no pitch of its own"): a
 // keyless voice plays every note of its track, a keyed one only its key.

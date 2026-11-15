@@ -1,7 +1,10 @@
 #include "music.h"
 
+#include <cmath>
 #include <cstddef>
+#include <cstdint>
 #include <utility>
+#include <vector>
 
 #include "bus.h"
 #include "env.h"
@@ -57,7 +60,46 @@ void fold(std::vector<double>& line, std::uint32_t frames, int channels) {
     line.resize(loop);
 }
 
+// The noise streams of a stack's copies after the first sit this far apart, past
+// every voice index a spec can hold, so no copy shares a stream with a voice.
+constexpr int kUnisonNoiseStride = 4096;
+constexpr double kCentsPerOctave = 1200.0;
+
+// An integer hash of the seed, the voice and the copy: where each copy's cycle
+// starts. The same on every note, so a note renders the same wherever it sits.
+std::uint32_t copy_phase(std::uint32_t seed, int voiceIndex, int copy) {
+    std::uint32_t x = seed ^ (0x9E3779B9U * static_cast<std::uint32_t>(voiceIndex + 1)) ^
+                      (0x85EBCA6BU * static_cast<std::uint32_t>(copy + 1));
+    x ^= x >> 16U;
+    x *= 0x7FEB352DU;
+    x ^= x >> 15U;
+    x *= 0x846CA68BU;
+    x ^= x >> 16U;
+    return x;
+}
+
 }  // namespace
+
+std::vector<UnisonCopy> unison_copies(const Unison& unison, std::uint32_t seed, int voiceIndex) {
+    int count = unison.voices;
+    if (count < 1) {
+        count = 1;
+    }
+    const double gain = 1.0 / std::sqrt(static_cast<double>(count));
+    std::vector<UnisonCopy> copies;
+    for (int k = 0; k < count; ++k) {
+        UnisonCopy copy;
+        const double place =
+            count > 1 ? static_cast<double>(k) / static_cast<double>(count - 1) - 0.5 : 0.0;
+        const double cents = unison.detuneCents * place;
+        copy.ratio = cents != 0.0 ? octave_ratio(cents / kCentsPerOctave) : 1.0;
+        copy.gain = gain;
+        copy.copy.startPhase = copy_phase(seed, voiceIndex, k);
+        copy.copy.noiseStream = voiceIndex + k * kUnisonNoiseStride;
+        copies.push_back(copy);
+    }
+    return copies;
+}
 
 bool voice_plays(const Voice& voice, int midiNote) {
     return voice.key < 0 || voice.key == midiNote;
@@ -132,6 +174,10 @@ MusicMix render_music(const Spec& spec, std::uint32_t frames, bool wantStems) {
             // start: on a chord, its top note, since notes at one start run up
             // in pitch. Vibrato is the voice's, the same on every note.
             const PitchExpression vibrato = vibrato_expression(voice, spec.sampleRate);
+            const std::vector<UnisonCopy> copies =
+                voice.hasUnison
+                    ? unison_copies(voice.unison, spec.seed, static_cast<int>(voiceIndex))
+                    : std::vector<UnisonCopy>{};
             const ScheduledNote* latest = nullptr;
             const ScheduledNote* previous = nullptr;
             for (const ScheduledNote& note : plan) {
@@ -157,12 +203,23 @@ MusicMix render_music(const Spec& spec, std::uint32_t frames, bool wantStems) {
                 }
                 const double velocity = note.velocity;
                 double* start = voiceLine.data() + note.startFrame;
-                run_voice_chain(spec, played, static_cast<int>(voiceIndex),
-                                note_frequency(voice, note.midiNote), envelope, expression,
-                                count,
-                                [&](std::uint32_t frame, double sample) {
-                                    start[frame] += sample * velocity;
-                                });
+                const double frequency = note_frequency(voice, note.midiNote);
+                if (!voice.hasUnison) {
+                    run_voice_chain(spec, played, static_cast<int>(voiceIndex), frequency,
+                                    envelope, expression, count,
+                                    [&](std::uint32_t frame, double sample) {
+                                        start[frame] += sample * velocity;
+                                    });
+                    continue;
+                }
+                for (const UnisonCopy& copy : copies) {
+                    const double level = velocity * copy.gain;
+                    run_voice_chain(spec, played, static_cast<int>(voiceIndex),
+                                    frequency * copy.ratio, envelope, expression, copy.copy,
+                                    count, [&](std::uint32_t frame, double sample) {
+                                        start[frame] += sample * level;
+                                    });
+                }
             }
 
             if (!voice.effects.empty()) {

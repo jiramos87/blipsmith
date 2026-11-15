@@ -36,7 +36,9 @@ const Fm4Algorithm& fm4_algorithm(int index);
 
 class FourOperator {
 public:
-    FourOperator(const Fm4& fm4, int sampleRate);
+    // `startTurns` starts every operator at that moment of its own cycle, so a
+    // unison copy is the same tone shifted in time; 0 starts them all at zero.
+    FourOperator(const Fm4& fm4, int sampleRate, double startTurns = 0.0);
 
     // One sample of the summed carriers, given the voice's pitch this frame in
     // turns per sample. Call once per frame, in frame order.
