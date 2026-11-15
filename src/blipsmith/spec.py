@@ -30,6 +30,7 @@ from blipsmith.ranges import (
     FM4_OPERATORS,
     MASTER_EFFECT_KINDS,
     MAX_VOICES,
+    MODAL_MAX_MODES,
     MUSIC_MAX_TRACKS,
     MUSIC_MAX_VOICES,
     MUSIC_SPEC_VERSION,
@@ -277,6 +278,32 @@ class String(SpecModel):
     bodyHz: float = RANGES[("String", "bodyHz")].default
 
 
+class Mode(SpecModel):
+    """One mode of a modal bank: a resonator at `ratio` times the voice's pitch
+    that rings at `level` when struck and falls 60 dB over `decayMs`."""
+
+    ratio: float = RANGES[("Mode", "ratio")].default
+    level: float = RANGES[("Mode", "level")].default
+    decayMs: float = RANGES[("Mode", "decayMs")].default
+
+
+def _default_modes() -> list[Mode]:
+    return [Mode()]
+
+
+class Modal(SpecModel):
+    """Music mode: a bank of tuned resonators struck once, in place of the voice's
+    oscillator: a skin, a cymbal, a block of wood, a bar. `brightness` is how hard
+    and bright the strike is: a soft mallet rings the low modes, a hard stick
+    rings them all. The modes follow the voice's pitch; the voice's amp envelope
+    still shapes each note and its release mutes the bank."""
+
+    brightness: float = RANGES[("Modal", "brightness")].default
+    modes: list[Mode] = Field(
+        default_factory=_default_modes, min_length=1, max_length=MODAL_MAX_MODES
+    )
+
+
 class Limiter(SpecModel):
     """The master safety gate. There is deliberately no `enabled` field: the PRD
     makes the limiter and clip guard non-optional on every render."""
@@ -323,6 +350,8 @@ class Voice(SpecModel):
     fm4: Fm4 | None = music_field()
     # Music mode: a plucked or struck string, in place of the oscillator.
     string: String | None = music_field()
+    # Music mode: a bank of tuned resonators, in place of the oscillator.
+    modal: Modal | None = music_field()
 
 
 class Note(SpecModel):
@@ -424,7 +453,7 @@ def music_fields_in(spec: SoundSpec) -> list[str]:
     if spec.master.effects is not None:
         found.append("master.effects")
     for index, voice in enumerate(spec.voices):
-        for name in ("key", "touch", "glide", "vibrato", "fm4", "string"):
+        for name in ("key", "touch", "glide", "vibrato", "fm4", "string", "modal"):
             if getattr(voice, name) is not None:
                 found.append(f"voices[{index}].{name}")
     if spec.composition is not None:
@@ -498,6 +527,20 @@ def _check_music(spec: SoundSpec) -> None:
         if voice.string is not None and voice.waveform is not Waveform.SINE:
             raise invalid_spec(
                 f"voices[{index}].string: the string replaces the oscillator, so the waveform "
+                f"must be 'sine', got {voice.waveform.value!r}.",
+                field=f"voices[{index}].waveform",
+            )
+        if voice.modal is not None and (
+            voice.fm is not None or voice.fm4 is not None or voice.string is not None
+        ):
+            raise invalid_spec(
+                f"voices[{index}].modal: the modal bank replaces the oscillator, so it cannot "
+                "sit beside fm, fm4 or string. Remove one of them.",
+                field=f"voices[{index}].modal",
+            )
+        if voice.modal is not None and voice.waveform is not Waveform.SINE:
+            raise invalid_spec(
+                f"voices[{index}].modal: the modal bank replaces the oscillator, so the waveform "
                 f"must be 'sine', got {voice.waveform.value!r}.",
                 field=f"voices[{index}].waveform",
             )

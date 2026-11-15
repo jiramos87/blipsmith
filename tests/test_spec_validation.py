@@ -67,6 +67,8 @@ def test_voice_surface_matches_prd() -> None:
         "fm4",
         # docs/prd/blipsmith-strings.md: a plucked or struck string, version 2 only.
         "string",
+        # docs/prd/blipsmith-drum-kit-two.md: a bank of tuned resonators, version 2 only.
+        "modal",
     }
 
 

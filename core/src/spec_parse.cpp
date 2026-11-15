@@ -422,6 +422,27 @@ String string_from(const JsonValue& block) {
     return string;
 }
 
+Modal modal_from(const JsonValue& block) {
+    Modal modal;
+    modal.brightness = number_or(block, "brightness", modal.brightness);
+    const JsonValue* modes = block.find("modes");
+    if (modes == nullptr || modes->kind != JsonValue::Kind::Array) {
+        modal.modes.push_back(Mode{});
+        return modal;
+    }
+    for (const JsonValue& entry : modes->items) {
+        if (entry.kind != JsonValue::Kind::Object) {
+            continue;
+        }
+        Mode mode;
+        mode.ratio = number_or(entry, "ratio", mode.ratio);
+        mode.level = number_or(entry, "level", mode.level);
+        mode.decayMs = number_or(entry, "decayMs", mode.decayMs);
+        modal.modes.push_back(mode);
+    }
+    return modal;
+}
+
 Fm4 fm4_from(const JsonValue& block) {
     Fm4 fm4;
     fm4.algorithm = int_or(block, "algorithm", fm4.algorithm);
@@ -644,6 +665,10 @@ Spec parse_spec(const std::string& json) {
                 if (const JsonValue* block = object_at(entry, "string")) {
                     voice.hasString = true;
                     voice.string = string_from(*block);
+                }
+                if (const JsonValue* block = object_at(entry, "modal")) {
+                    voice.hasModal = true;
+                    voice.modal = modal_from(*block);
                 }
                 if (const JsonValue* block = object_at(entry, "vibrato")) {
                     voice.hasVibrato = true;

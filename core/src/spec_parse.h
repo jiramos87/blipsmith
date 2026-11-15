@@ -165,6 +165,19 @@ struct String {
     double bodyHz = 200.0;
 };
 
+// Music mode, one mode of a modal bank.
+struct Mode {
+    double ratio = 1.0;
+    double level = 1.0;
+    double decayMs = 500.0;
+};
+
+// Music mode, a bank of tuned resonators struck once in place of the oscillator.
+struct Modal {
+    double brightness = 0.6;
+    std::vector<Mode> modes;
+};
+
 // One flat struct per the published contract: each kind reads the parameters
 // that apply to it and ignores the rest.
 struct Effect {
@@ -220,6 +233,9 @@ struct Voice {
     // Music mode: a plucked or struck string in place of the oscillator.
     bool hasString = false;
     String string;
+    // Music mode: a bank of tuned resonators in place of the oscillator.
+    bool hasModal = false;
+    Modal modal;
 };
 
 // One scheduled event. The Python compiler has already expanded painted steps

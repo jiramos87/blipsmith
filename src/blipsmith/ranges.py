@@ -44,6 +44,8 @@ MASTER_EFFECT_KINDS = ("delay", "reverb")
 # order, so a modulator always comes before what it feeds. The core holds the
 # same table; a test keeps the two equal.
 FM4_OPERATORS = 4
+# Music mode, a modal voice: a bank of 1 to this many tuned resonators.
+MODAL_MAX_MODES = 16
 FM4_ALGORITHMS: tuple[tuple[tuple[tuple[int, ...], ...], tuple[int, ...]], ...] = (
     (((), (1,), (2,), (3,)), (4,)),  # 0: 1 > 2 > 3 > 4
     (((), (), (1, 2), (3,)), (4,)),  # 1: (1 + 2) > 3 > 4
@@ -224,6 +226,13 @@ RANGES: dict[tuple[str, str], NumericRange] = {
     ),
     ("String", "body"): NumericRange(0, 1, 0, "", "mix of a body resonance; 0 is off"),
     ("String", "bodyHz"): NumericRange(60, 2000, 200, "Hz", "the body resonance's frequency"),
+    # Modal (music mode): a bank of tuned resonators struck once, in place of the oscillator
+    ("Modal", "brightness"): NumericRange(
+        0, 1, 0.6, "", "how hard and bright the strike is; a soft mallet rings only the low modes"
+    ),
+    ("Mode", "ratio"): NumericRange(0.1, 32, 1, "", "the mode's frequency over the voice's pitch"),
+    ("Mode", "level"): NumericRange(0, 1, 1, "", "how loud the mode rings when struck"),
+    ("Mode", "decayMs"): NumericRange(5, 30_000, 500, "ms", "time for the mode to fall 60 dB"),
     # Composition
     ("Composition", "tempoBpm"): NumericRange(20, 300, 120, "BPM", "composition tempo"),
     ("Composition", "swing"): NumericRange(0, 0.75, 0, "", "offbeat delay as a fraction of a step"),
