@@ -76,6 +76,10 @@ SESSION_TOOLS = (
     "set_string",
     # docs/prd/blipsmith-drum-kit-two.md
     "set_modal",
+    # docs/prd/blipsmith-wavetables.md
+    "set_wavetable",
+    "set_additive",
+    "set_unison",
 )
 STATELESS_TOOLS = ("render_spec", "get_schema", "list_presets", "load_preset", "explain_spec")
 PINNED_TOOLS = (*SESSION_TOOLS, *STATELESS_TOOLS)
@@ -694,6 +698,11 @@ def test_every_pinned_tool_is_exercised(tmp_path: Path) -> None:
         await mcp.call(
             "set_modal", brightness=0.4, modes=[{"ratio": 1.0}, {"ratio": 1.59, "level": 0.5}]
         )
+        await mcp.call("new_voice", waveform="sine")
+        await mcp.call("set_wavetable", table="vowel", position=0.2, positionEnd=0.8)
+        await mcp.call("set_unison", voices=3, detuneCents=10.0)
+        await mcp.call("new_voice", waveform="sine")
+        await mcp.call("set_additive", partials=[{"ratio": 1.0}, {"ratio": 2.0, "decayMs": 400.0}])
         await mcp.call("explain_session")
         await mcp.call("render", outDir=str(tmp_path))
         exported = await mcp.call("export_spec")

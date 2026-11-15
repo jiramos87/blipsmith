@@ -41,6 +41,7 @@ from blipsmith.spec import (
     SoundSpec,
     validate_spec,
 )
+from blipsmith.wavetables import table_frames
 
 SpecData = dict[str, Any]
 
@@ -493,6 +494,66 @@ class Session:
         `{ratio, level, decayMs}`)."""
         return self._expression_block(
             "modal", "a modal bank", clear, {"brightness": brightness, "modes": modes}
+        )
+
+    def set_wavetable(
+        self,
+        table: str | None = None,
+        frames: list[list[float]] | None = None,
+        position: float | None = None,
+        positionEnd: float | None = None,
+        sweepMs: float | None = None,
+        clear: bool = False,
+    ) -> list[SpecWarning]:
+        """Patch the voice's wavetable, starting it from its defaults the first
+        time. `table` names a built-in table and `frames` gives one as harmonic
+        amplitudes per frame; either replaces the whole set of frames."""
+        if table is not None and frames is not None:
+            raise invalid_spec(
+                "set_wavetable: give a table name or frames, not both.", field="table"
+            )
+        given: list[dict[str, list[float]]] | None = None
+        if table is not None:
+            given = table_frames(table)
+        elif frames is not None:
+            given = [{"harmonics": list(frame)} for frame in frames]
+        return self._expression_block(
+            "wavetable",
+            "a wavetable",
+            clear,
+            {
+                "frames": given,
+                "position": position,
+                "positionEnd": positionEnd,
+                "sweepMs": sweepMs,
+            },
+        )
+
+    def set_additive(
+        self,
+        brightness: float | None = None,
+        stretch: float | None = None,
+        partials: list[dict[str, float]] | None = None,
+        clear: bool = False,
+    ) -> list[SpecWarning]:
+        """Patch the voice's additive block, starting it from its defaults the
+        first time. `partials`, when given, replaces the whole set (1 to 32, each
+        `{ratio, level, decayMs}`)."""
+        return self._expression_block(
+            "additive",
+            "an additive voice",
+            clear,
+            {"brightness": brightness, "stretch": stretch, "partials": partials},
+        )
+
+    def set_unison(
+        self,
+        voices: int | None = None,
+        detuneCents: float | None = None,
+        clear: bool = False,
+    ) -> list[SpecWarning]:
+        return self._expression_block(
+            "unison", "unison", clear, {"voices": voices, "detuneCents": detuneCents}
         )
 
     def set_vibrato(

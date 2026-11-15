@@ -1,0 +1,128 @@
+{
+  "version": 2,
+  "seed": 72,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 3000,
+  "meta": {
+    "name": "music-wavetable-touch",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "A glass-table lead whose harder notes read brighter frames, with a short sweep on each note and a glide."
+  },
+  "composition": {
+    "tempoBpm": 100,
+    "tracks": [
+      {
+        "name": "lead",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 72,
+            "velocity": 0.3,
+            "durationBeats": 0.5
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 74,
+            "velocity": 0.6,
+            "durationBeats": 0.5
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 76,
+            "velocity": 0.95,
+            "durationBeats": 0.5
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 79,
+            "velocity": 0.2,
+            "durationBeats": 0.5
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 76,
+            "velocity": 0.8,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 3,
+            "midiNote": 72,
+            "velocity": 0.5,
+            "durationBeats": 1
+          }
+        ]
+      }
+    ]
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "ampEnv": {
+        "attackMs": 5,
+        "decayMs": 200,
+        "sustainLevel": 0.8,
+        "releaseMs": 200
+      },
+      "wavetable": {
+        "frames": [
+          {
+            "harmonics": [
+              1.0,
+              0.0,
+              0.3,
+              0.0,
+              0.2
+            ]
+          },
+          {
+            "harmonics": [
+              0.6,
+              0.0,
+              0.2,
+              0.0,
+              0.4,
+              0.0,
+              0.5,
+              0.0,
+              0.3
+            ]
+          },
+          {
+            "harmonics": [
+              0.4,
+              0.0,
+              0.1,
+              0.0,
+              0.2,
+              0.0,
+              0.3,
+              0.0,
+              0.5,
+              0.0,
+              0.6,
+              0.0,
+              0.4,
+              0.0,
+              0.2
+            ]
+          }
+        ],
+        "position": 0.3,
+        "positionEnd": 0.6,
+        "sweepMs": 300
+      },
+      "touch": {
+        "pivot": 0.6,
+        "cutoffOctaves": 3
+      },
+      "glide": {
+        "timeMs": 60,
+        "mode": "legato"
+      }
+    }
+  ]
+}

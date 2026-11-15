@@ -9,7 +9,7 @@ drive a physical synth, one typed setter at a time, and a human drives the same
 engine from a terminal. Both paths run the same code and produce the same bytes.
 
 **Same spec, same seed, identical WAV. Every time, on every supported platform.**
-That is the contract the whole design serves, and CI proves it by rendering 56
+That is the contract the whole design serves, and CI proves it by rendering 61
 golden specs on Linux x86_64 and macOS arm64 and comparing SHA-256 sets.
 
 ## Install
@@ -40,7 +40,7 @@ claude mcp add blipsmith -- uv run --project /path/to/blipsmith blipsmith-mcp
 ```
 
 Then ask for a sound. The agent holds one session, shaped like a synth front
-panel: 39 tools, grouped so that one call sets one block of related parameters.
+panel: 42 tools, grouped so that one call sets one block of related parameters.
 
 > **You:** Make me a laser shot, but heavier and dirtier than the stock one.
 
@@ -298,6 +298,38 @@ plays exactly as before.
 The MCP verb is `set_modal`. The behaviour is specified in
 `docs/prd/blipsmith-drum-kit-two.md`.
 
+### Wavetables, partials, unison and chorus
+
+Four more ways to make a music-mode voice: a tone that morphs over the note, a
+tone built partial by partial, a voice doubled into detuned copies, and a chorus
+that widens a part. A voice or a part without them plays exactly as before.
+
+- **Wavetable.** One to eight single-cycle frames, each given as the amplitudes
+  of up to 64 harmonics, every frame played at one sine's loudness. Each note
+  starts at `position` and can sweep to `positionEnd` over `sweepMs`; between
+  two frames their harmonics crossfade. Built-in tables by name, dark to bright:
+  `bright` (sine, triangle, square, saw), `organ`, `vowel`, `glass`.
+- **Additive.** Up to 32 sine partials at any `ratio` of the pitch, each with
+  its `level` and its own `decayMs`, so the upper partials of a tine or a bell
+  can fade first while an organ holds them all. `stretch` sharpens the upper
+  partials as a piano string does; `brightness` rolls them off.
+- **No aliasing.** Both are summed partial by partial on the baked sine, and a
+  partial fades out as it nears Nyquist, so a high note never folds back and a
+  glide across the ceiling does not click.
+- **Unison.** Two to eight copies of any pitched voice per note (an oscillator,
+  FM, a string, a modal bank, a wavetable, partials), spread across
+  `detuneCents`, each at one over the root of the count. The copies start at
+  points taken from the seed, so they do not peak together on the first cycle.
+- **Chorus.** A new effect kind (`delayMs`, `depthMs`, `rateHz`, `mixWet`): on
+  a voice it thickens; on a stereo track the two sides swing apart, so the part
+  widens.
+- **Touch** reaches a wavetable's position and an additive voice's brightness
+  through `cutoffOctaves`, so a harder note reads a brighter frame.
+
+The MCP verbs are `set_wavetable`, `set_additive` and `set_unison`; a chorus is
+an entry of `set_effects` or a track's effects. The behaviour is specified in
+`docs/prd/blipsmith-wavetables.md`.
+
 ## Determinism, and how it is enforced
 
 The audio path uses fixed-point phase accumulators and baked wavetables, with no
@@ -314,7 +346,7 @@ That invariant is enforced, not just intended:
   `sin()` and asserts the check rejects it, so the gate is known to be able to
   fail.
 - `-ffp-contract=off`, no fast-math, C++17, pinned in `CMakeLists.txt`.
-- 56 golden specs cover every waveform, every processing stage and every preset
+- 61 golden specs cover every waveform, every processing stage and every preset
   archetype. Each one asserts its recorded hash, non-clipping output, and a peak
   at the normalization target.
 - CI renders that corpus on Linux x86_64 and macOS arm64 and diffs the hash

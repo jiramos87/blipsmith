@@ -1,0 +1,248 @@
+{
+  "version": 2,
+  "seed": 73,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 3000,
+  "meta": {
+    "name": "music-additive",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Tine keys whose upper partials fade first, a held drawbar organ and a stretched round bass, all built from partials."
+  },
+  "composition": {
+    "tempoBpm": 100,
+    "tracks": [
+      {
+        "name": "keys",
+        "pan": -0.3,
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 60,
+            "velocity": 0.8,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 64,
+            "velocity": 0.7,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 67,
+            "velocity": 0.7,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 62,
+            "velocity": 0.9,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 65,
+            "velocity": 0.6,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 64,
+            "velocity": 0.8,
+            "durationBeats": 2
+          }
+        ]
+      },
+      {
+        "name": "organ",
+        "pan": 0.3,
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 48,
+            "velocity": 0.6,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 55,
+            "velocity": 0.6,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 50,
+            "velocity": 0.6,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 57,
+            "velocity": 0.6,
+            "durationBeats": 2
+          }
+        ]
+      },
+      {
+        "name": "bass",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 36,
+            "velocity": 0.9,
+            "durationBeats": 0.75
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 38,
+            "velocity": 0.8,
+            "durationBeats": 0.75
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 40,
+            "velocity": 0.9,
+            "durationBeats": 0.75
+          },
+          {
+            "startBeat": 3,
+            "midiNote": 43,
+            "velocity": 0.7,
+            "durationBeats": 0.75
+          }
+        ]
+      }
+    ]
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "track": 0,
+      "mixDb": -3,
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 250
+      },
+      "additive": {
+        "brightness": 0.7,
+        "stretch": 0.0004,
+        "partials": [
+          {
+            "ratio": 1,
+            "level": 1,
+            "decayMs": 3500
+          },
+          {
+            "ratio": 2,
+            "level": 0.5,
+            "decayMs": 1500
+          },
+          {
+            "ratio": 3,
+            "level": 0.3,
+            "decayMs": 700
+          },
+          {
+            "ratio": 4,
+            "level": 0.25,
+            "decayMs": 400
+          },
+          {
+            "ratio": 7.1,
+            "level": 0.2,
+            "decayMs": 120
+          },
+          {
+            "ratio": 13.4,
+            "level": 0.15,
+            "decayMs": 60
+          }
+        ]
+      },
+      "touch": {
+        "pivot": 0.7,
+        "cutoffOctaves": 2
+      }
+    },
+    {
+      "waveform": "sine",
+      "track": 1,
+      "mixDb": -8,
+      "ampEnv": {
+        "attackMs": 15,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 80
+      },
+      "additive": {
+        "partials": [
+          {
+            "ratio": 1,
+            "level": 1
+          },
+          {
+            "ratio": 2,
+            "level": 0.8
+          },
+          {
+            "ratio": 3,
+            "level": 0.6
+          },
+          {
+            "ratio": 4,
+            "level": 0.6
+          },
+          {
+            "ratio": 6,
+            "level": 0.4
+          },
+          {
+            "ratio": 8,
+            "level": 0.4
+          }
+        ]
+      }
+    },
+    {
+      "waveform": "sine",
+      "track": 2,
+      "ampEnv": {
+        "attackMs": 1,
+        "decayMs": 400,
+        "sustainLevel": 0.6,
+        "releaseMs": 100
+      },
+      "additive": {
+        "stretch": 0.002,
+        "partials": [
+          {
+            "ratio": 1,
+            "level": 1,
+            "decayMs": 0
+          },
+          {
+            "ratio": 2,
+            "level": 0.6,
+            "decayMs": 300
+          },
+          {
+            "ratio": 3,
+            "level": 0.4,
+            "decayMs": 150
+          },
+          {
+            "ratio": 4,
+            "level": 0.3,
+            "decayMs": 80
+          }
+        ]
+      }
+    }
+  ]
+}

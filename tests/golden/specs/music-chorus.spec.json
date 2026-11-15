@@ -1,0 +1,127 @@
+{
+  "version": 2,
+  "seed": 75,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 3000,
+  "meta": {
+    "name": "music-chorus",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "A chorus on a stereo keys part that swings its two sides apart, and a chorus inside a lead voice."
+  },
+  "composition": {
+    "tempoBpm": 100,
+    "tracks": [
+      {
+        "name": "keys",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 60,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 64,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 67,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 62,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 65,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 69,
+            "velocity": 0.7,
+            "durationBeats": 2
+          }
+        ],
+        "effects": [
+          {
+            "kind": "chorus",
+            "delayMs": 14,
+            "depthMs": 3,
+            "rateHz": 0.6,
+            "mixWet": 0.5
+          }
+        ]
+      },
+      {
+        "name": "lead",
+        "pan": 0.25,
+        "notes": [
+          {
+            "startBeat": 0.5,
+            "midiNote": 72,
+            "velocity": 0.8,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 74,
+            "velocity": 0.8,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 2.5,
+            "midiNote": 76,
+            "velocity": 0.8,
+            "durationBeats": 1.5
+          }
+        ]
+      }
+    ]
+  },
+  "voices": [
+    {
+      "waveform": "triangle",
+      "track": 0,
+      "ampEnv": {
+        "attackMs": 5,
+        "decayMs": 400,
+        "sustainLevel": 0.7,
+        "releaseMs": 300
+      }
+    },
+    {
+      "waveform": "pulse",
+      "pulseDuty": 0.3,
+      "track": 1,
+      "mixDb": -8,
+      "ampEnv": {
+        "attackMs": 10,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 200
+      },
+      "effects": [
+        {
+          "kind": "chorus",
+          "delayMs": 8,
+          "depthMs": 1.5,
+          "rateHz": 2,
+          "mixWet": 0.4
+        }
+      ]
+    }
+  ]
+}

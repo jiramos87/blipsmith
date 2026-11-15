@@ -1,0 +1,292 @@
+{
+  "version": 2,
+  "seed": 71,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 3000,
+  "meta": {
+    "name": "music-wavetable-sweep",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "A vowel pad opening from oo to ae over each chord, over a bass on the bright table held between square and saw."
+  },
+  "composition": {
+    "tempoBpm": 100,
+    "tracks": [
+      {
+        "name": "pad",
+        "pan": -0.1,
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 57,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 60,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 64,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 55,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 59,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 62,
+            "velocity": 0.7,
+            "durationBeats": 2
+          }
+        ]
+      },
+      {
+        "name": "bass",
+        "pan": 0.1,
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 33,
+            "velocity": 0.9,
+            "durationBeats": 1.5
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 31,
+            "velocity": 0.9,
+            "durationBeats": 1.5
+          },
+          {
+            "startBeat": 3.5,
+            "midiNote": 38,
+            "velocity": 0.7,
+            "durationBeats": 0.5
+          }
+        ]
+      }
+    ]
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "track": 0,
+      "mixDb": -6,
+      "ampEnv": {
+        "attackMs": 80,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 400
+      },
+      "wavetable": {
+        "frames": [
+          {
+            "harmonics": [
+              1.0,
+              0.35,
+              0.1,
+              0.05
+            ]
+          },
+          {
+            "harmonics": [
+              1.0,
+              0.7,
+              0.45,
+              0.2,
+              0.1,
+              0.05
+            ]
+          },
+          {
+            "harmonics": [
+              0.7,
+              0.9,
+              1.0,
+              0.8,
+              0.55,
+              0.35,
+              0.25,
+              0.2,
+              0.15,
+              0.1,
+              0.08,
+              0.06
+            ]
+          },
+          {
+            "harmonics": [
+              0.5,
+              0.6,
+              0.7,
+              0.5,
+              0.3,
+              0.2,
+              0.3,
+              0.5,
+              0.6,
+              0.45,
+              0.3,
+              0.2,
+              0.15,
+              0.1
+            ]
+          }
+        ],
+        "position": 0,
+        "positionEnd": 1,
+        "sweepMs": 1500
+      },
+      "vibrato": {
+        "delayMs": 300,
+        "fadeMs": 400,
+        "rateHz": 5,
+        "depthCents": 12
+      }
+    },
+    {
+      "waveform": "sine",
+      "track": 1,
+      "ampEnv": {
+        "attackMs": 2,
+        "decayMs": 300,
+        "sustainLevel": 0.7,
+        "releaseMs": 120
+      },
+      "wavetable": {
+        "frames": [
+          {
+            "harmonics": [
+              1.0
+            ]
+          },
+          {
+            "harmonics": [
+              1.0,
+              0.0,
+              -0.111111,
+              0.0,
+              0.04,
+              0.0,
+              -0.020408,
+              0.0,
+              0.012346,
+              0.0,
+              -0.008264,
+              0.0,
+              0.005917,
+              0.0,
+              -0.004444,
+              0.0,
+              0.00346,
+              0.0,
+              -0.00277,
+              0.0,
+              0.002268,
+              0.0,
+              -0.00189,
+              0.0,
+              0.0016,
+              0.0,
+              -0.001372,
+              0.0,
+              0.001189,
+              0.0,
+              -0.001041,
+              0.0
+            ]
+          },
+          {
+            "harmonics": [
+              1.0,
+              0.0,
+              0.333333,
+              0.0,
+              0.2,
+              0.0,
+              0.142857,
+              0.0,
+              0.111111,
+              0.0,
+              0.090909,
+              0.0,
+              0.076923,
+              0.0,
+              0.066667,
+              0.0,
+              0.058824,
+              0.0,
+              0.052632,
+              0.0,
+              0.047619,
+              0.0,
+              0.043478,
+              0.0,
+              0.04,
+              0.0,
+              0.037037,
+              0.0,
+              0.034483,
+              0.0,
+              0.032258,
+              0.0
+            ]
+          },
+          {
+            "harmonics": [
+              1.0,
+              0.5,
+              0.333333,
+              0.25,
+              0.2,
+              0.166667,
+              0.142857,
+              0.125,
+              0.111111,
+              0.1,
+              0.090909,
+              0.083333,
+              0.076923,
+              0.071429,
+              0.066667,
+              0.0625,
+              0.058824,
+              0.055556,
+              0.052632,
+              0.05,
+              0.047619,
+              0.045455,
+              0.043478,
+              0.041667,
+              0.04,
+              0.038462,
+              0.037037,
+              0.035714,
+              0.034483,
+              0.033333,
+              0.032258,
+              0.03125
+            ]
+          }
+        ],
+        "position": 0.8
+      }
+    }
+  ]
+}

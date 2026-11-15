@@ -13,8 +13,10 @@ from typing import Any
 
 import pytest
 
+from blipsmith.explain import explain_spec
 from blipsmith.result import SpecError
 from blipsmith.schema import get_schema
+from blipsmith.session import Session
 from blipsmith.spec import parse_spec, to_canonical_json, validate_spec
 from blipsmith.wavetables import NAMED_TABLES, table_frames
 
@@ -223,3 +225,89 @@ def test_the_schema_publishes_the_new_blocks_as_music_mode() -> None:
     assert models["Effect"]["fields"]["rateHz"]["musicMode"] is True
     assert models["Frame"]["fields"]["harmonics"]["maximum"] == 1
     assert models["Partial"]["fields"]["decayMs"]["maximum"] == 30_000
+
+
+# --- The session verbs and the explanation ----------------------------------------------
+
+
+def music_session() -> Session:
+    session = Session()
+    session.new_voice("sine")
+    session.set_render_options(version=2)
+    return session
+
+
+def test_set_wavetable_takes_a_named_table_and_patches_it() -> None:
+    session = music_session()
+    session.set_wavetable(table="bright", position=0.25)
+    session.set_wavetable(positionEnd=0.75, sweepMs=500)
+    wavetable = session.spec.voices[0].wavetable
+    assert wavetable is not None
+    assert len(wavetable.frames) == 4
+    assert (wavetable.position, wavetable.positionEnd, wavetable.sweepMs) == (0.25, 0.75, 500)
+    session.set_wavetable(frames=[[1.0, 0.5]])
+    wavetable = session.spec.voices[0].wavetable
+    assert wavetable is not None
+    assert wavetable.frames[0].harmonics == [1.0, 0.5]
+    session.set_wavetable(clear=True)
+    assert session.spec.voices[0].wavetable is None
+
+
+def test_set_wavetable_refuses_a_name_and_frames_together() -> None:
+    session = music_session()
+    with pytest.raises(SpecError):
+        session.set_wavetable(table="organ", frames=[[1.0]])
+    assert session.spec.voices[0].wavetable is None
+
+
+def test_set_additive_and_set_unison_patch_their_blocks() -> None:
+    session = music_session()
+    session.set_additive(partials=[{"ratio": 1.0}, {"ratio": 2.0, "decayMs": 300.0}])
+    session.set_additive(stretch=0.001)
+    session.set_unison(voices=3)
+    voice = session.spec.voices[0]
+    assert voice.additive is not None
+    assert [(p.ratio, p.decayMs) for p in voice.additive.partials] == [(1.0, 0.0), (2.0, 300.0)]
+    assert voice.additive.stretch == 0.001
+    assert voice.unison is not None
+    assert (voice.unison.voices, voice.unison.detuneCents) == (3, 12.0)
+
+
+def test_the_new_verbs_are_refused_on_version_one() -> None:
+    session = Session()
+    session.new_voice("sine")
+    for verb in (session.set_wavetable, session.set_additive, session.set_unison):
+        with pytest.raises(SpecError) as caught:
+            verb()
+        assert caught.value.error.field == "version"
+
+
+def test_the_explanation_names_each_block() -> None:
+    spec = parse_spec(
+        music(
+            {
+                "waveform": "sine",
+                "wavetable": {
+                    "frames": table_frames("vowel"),
+                    "position": 0.1,
+                    "positionEnd": 0.9,
+                    "sweepMs": 800,
+                },
+                "unison": {"voices": 3, "detuneCents": 8},
+                "touch": {"cutoffOctaves": 2},
+            },
+            {
+                "waveform": "sine",
+                "additive": {"partials": [{"ratio": 1}, {"ratio": 2, "decayMs": 300}]},
+                "effects": [{"kind": "chorus"}],
+            },
+        )
+    )
+    text = explain_spec(spec)
+    assert "a wavetable tone" in text
+    assert "a wavetable of 4 frames up to harmonic 14, swept from 0.1 to 0.9 over 800 ms" in text
+    assert "3 unison copies spread 8 cents" in text
+    assert "touch moving the table position" in text
+    assert "an additive tone" in text
+    assert "2 partials at 1x, 2x the pitch, some fading and some held" in text
+    assert "a chorus swinging 2 ms around 12 ms at 0.8 Hz" in text

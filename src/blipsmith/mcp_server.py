@@ -194,8 +194,10 @@ def build_server(session: Session | None = None) -> FastMCP:
     def set_effects(effects: list[dict[str, Any]]) -> dict[str, Any]:
         """Replace the effect chain, in order. Each entry needs a `kind`:
         distortion or wavefold (read `drive`), delay (`timeMs`, `feedback`,
-        `mixWet`), reverb (`roomSize`, `damping`, `mixWet`). An empty list
-        clears the chain."""
+        `mixWet`), reverb (`roomSize`, `damping`, `mixWet`). Music mode only:
+        chorus (`delayMs` 1 to 40, `depthMs` 0 to 10, `rateHz` 0.05 to 8,
+        `mixWet`), which thickens a voice and, on a stereo track's effects,
+        widens the part. An empty list clears the chain."""
         return _guarded(lambda: state.set_effects(effects))
 
     @server.tool()
@@ -331,6 +333,66 @@ def build_server(session: Session | None = None) -> FastMCP:
         return _guarded(lambda: state.set_modal(brightness, modes, clear))
 
     @server.tool()
+    def set_wavetable(
+        table: str | None = None,
+        frames: list[list[float]] | None = None,
+        position: float | None = None,
+        positionEnd: float | None = None,
+        sweepMs: float | None = None,
+        clear: bool = False,
+    ) -> dict[str, Any]:
+        """Music mode: a tone that morphs through single-cycle frames replaces
+        this voice's oscillator (the waveform must be sine, and the voice cannot
+        also have fm, fm4, string, modal or additive): a vowel that opens, a pad
+        that brightens. `table` names a built-in table, dark to bright: 'bright'
+        (sine, triangle, square, saw), 'organ', 'vowel', 'glass'. Or `frames`
+        gives 1 to 8 frames, each 1 to 64 harmonic amplitudes -1 to 1 (the first
+        is the fundamental); each frame plays at one sine's loudness. Each note
+        starts at `position` (0 the first frame, 1 the last) and, with
+        `positionEnd`, sweeps to it over `sweepMs` (1 to 30000) and holds.
+        Harmonics a note cannot carry fade out, so high notes never alias.
+        Touch's cutoffOctaves moves the position with velocity (4 octaves cross
+        the table). `clear` removes it."""
+        return _guarded(
+            lambda: state.set_wavetable(table, frames, position, positionEnd, sweepMs, clear)
+        )
+
+    @server.tool()
+    def set_additive(
+        brightness: float | None = None,
+        stretch: float | None = None,
+        partials: list[dict[str, float]] | None = None,
+        clear: bool = False,
+    ) -> dict[str, Any]:
+        """Music mode: a tone built from sine partials replaces this voice's
+        oscillator (the waveform must be sine, and the voice cannot also have fm,
+        fm4, string, modal or wavetable): organ drawbars, an electric piano's
+        tines, a bell, a round bass whose upper partials fade first. `partials`
+        replaces the whole set, 1 to 32 entries of `{ratio, level, decayMs}`:
+        `ratio` 0.5 to 32 of the voice's pitch, `level` 0 to 1, `decayMs` 0 to
+        30000 (time to fall 60 dB; 0 holds it). `stretch` 0 to 0.02 sharpens the
+        upper partials as a piano string does; `brightness` 0 to 1 rolls them off
+        (1 is none), and touch's cutoffOctaves moves it with velocity. The set
+        plays at one sine's loudness. `clear` removes it."""
+        return _guarded(lambda: state.set_additive(brightness, stretch, partials, clear))
+
+    @server.tool()
+    def set_unison(
+        voices: int | None = None,
+        detuneCents: float | None = None,
+        clear: bool = False,
+    ) -> dict[str, Any]:
+        """Music mode: every note of this voice plays as `voices` (2 to 8)
+        detuned copies spread evenly across `detuneCents` (0 to 100, lowest to
+        highest copy), each at one over the square root of the count so the stack
+        sounds about as loud as one copy. Works on any pitched source: an
+        oscillator, fm, fm4, a string (a fuller piano at 2 to 4 cents), a modal
+        bank, a wavetable, an additive voice; not on noise. The copies' start
+        points come from the seed. Width comes from a chorus on the track, set
+        with set_track effects. `clear` removes it."""
+        return _guarded(lambda: state.set_unison(voices, detuneCents, clear))
+
+    @server.tool()
     def set_vibrato(
         delayMs: float | None = None,
         fadeMs: float | None = None,
@@ -397,7 +459,8 @@ def build_server(session: Session | None = None) -> FastMCP:
     ) -> dict[str, Any]:
         """Level and stereo position for one mixer track (five, 0 to 4, unless
         the music mode added more). Music mode: `name` labels its stem, and
-        `effects` is its own insert chain, run once over all it plays."""
+        `effects` is its own insert chain, run once over all it plays; a chorus
+        there swings the two sides apart, so the part widens."""
         return _guarded(lambda: state.set_track(track, gainDb, pan, name, effects))
 
     @server.tool()

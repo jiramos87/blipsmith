@@ -243,6 +243,46 @@ STAGE_PROBES: dict[str, Callable[[SoundSpec], bool]] = {
             and v.lfo.target == "cutoff"
         ),
     ),
+    # docs/prd/blipsmith-wavetables.md
+    "wavetable: a sweep across the frames": lambda spec: _has_voice(
+        spec,
+        lambda v: (
+            v.wavetable is not None
+            and v.wavetable.positionEnd is not None
+            and len(v.wavetable.frames) > 1
+        ),
+    ),
+    "wavetable: touch on the position": lambda spec: _has_voice(
+        spec,
+        lambda v: v.wavetable is not None and v.touch is not None and v.touch.cutoffOctaves != 0,
+    ),
+    "additive: partials with their own decay, stretched": lambda spec: _has_voice(
+        spec,
+        lambda v: (
+            v.additive is not None
+            and v.additive.stretch > 0
+            and len({p.decayMs for p in v.additive.partials}) > 1
+        ),
+    ),
+    "unison: on a struck string": lambda spec: _has_voice(
+        spec, lambda v: v.unison is not None and v.string is not None
+    ),
+    "unison: on an oscillator": lambda spec: _has_voice(
+        spec,
+        lambda v: (
+            v.unison is not None and v.fm4 is None and v.string is None and v.wavetable is None
+        ),
+    ),
+    "chorus: on a voice": lambda spec: _has_effect(spec, "chorus"),
+    "chorus: on a stereo track": lambda spec: (
+        spec.channels == 2
+        and spec.composition is not None
+        and any(
+            effect.kind == "chorus"
+            for track in spec.composition.tracks
+            for effect in track.effects or []
+        )
+    ),
 }
 
 

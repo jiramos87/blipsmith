@@ -1,0 +1,181 @@
+{
+  "version": 2,
+  "seed": 74,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 3000,
+  "meta": {
+    "name": "music-unison",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Unison stacks: a struck string in detuned pairs, a five-copy saw lead and a three-copy fm4 bell."
+  },
+  "composition": {
+    "tempoBpm": 100,
+    "tracks": [
+      {
+        "name": "piano",
+        "pan": -0.2,
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 57,
+            "velocity": 0.8,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 60,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 0,
+            "midiNote": 64,
+            "velocity": 0.7,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 59,
+            "velocity": 0.8,
+            "durationBeats": 2
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 62,
+            "velocity": 0.7,
+            "durationBeats": 2
+          }
+        ]
+      },
+      {
+        "name": "lead",
+        "pan": 0.2,
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 76,
+            "velocity": 0.7,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 79,
+            "velocity": 0.8,
+            "durationBeats": 1
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 81,
+            "velocity": 0.7,
+            "durationBeats": 2
+          }
+        ]
+      },
+      {
+        "name": "bell",
+        "notes": [
+          {
+            "startBeat": 0.5,
+            "midiNote": 84,
+            "velocity": 0.6,
+            "durationBeats": 0.5
+          },
+          {
+            "startBeat": 2.5,
+            "midiNote": 88,
+            "velocity": 0.6,
+            "durationBeats": 0.5
+          }
+        ]
+      }
+    ]
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "track": 0,
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 300
+      },
+      "string": {
+        "excitation": "strike",
+        "position": 0.12,
+        "brightness": 0.55,
+        "decayMs": 3000,
+        "damping": 0.25
+      },
+      "unison": {
+        "voices": 2,
+        "detuneCents": 3
+      }
+    },
+    {
+      "waveform": "saw",
+      "track": 1,
+      "mixDb": -10,
+      "ampEnv": {
+        "attackMs": 10,
+        "decayMs": 200,
+        "sustainLevel": 0.7,
+        "releaseMs": 200
+      },
+      "filter": {
+        "type": "lowpass",
+        "cutoffHz": 3000,
+        "resonance": 0.8
+      },
+      "unison": {
+        "voices": 5,
+        "detuneCents": 25
+      }
+    },
+    {
+      "waveform": "sine",
+      "track": 2,
+      "mixDb": -8,
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 600
+      },
+      "fm4": {
+        "algorithm": 4,
+        "operators": [
+          {
+            "ratio": 3.5,
+            "level": 0.3,
+            "decayMs": 300,
+            "sustainLevel": 0
+          },
+          {
+            "ratio": 1,
+            "level": 1,
+            "decayMs": 1200,
+            "sustainLevel": 0
+          },
+          {
+            "ratio": 1,
+            "level": 0,
+            "decayMs": 0
+          },
+          {
+            "ratio": 1,
+            "level": 0
+          }
+        ]
+      },
+      "unison": {
+        "voices": 3,
+        "detuneCents": 6
+      }
+    }
+  ]
+}

@@ -19,6 +19,7 @@ from __future__ import annotations
 
 from blipsmith.ranges import FM4_ALGORITHMS
 from blipsmith.spec import (
+    Additive,
     Adsr,
     AmMode,
     Effect,
@@ -30,8 +31,10 @@ from blipsmith.spec import (
     Operator,
     SoundSpec,
     String,
+    Unison,
     Voice,
     Waveform,
+    Wavetable,
 )
 
 # How a waveform reads to someone who has to picture the sound.
@@ -99,6 +102,11 @@ def _effect_phrase(effect: Effect) -> str:
         return f"wavefolding at {_number(effect.drive * 100)}% drive"
     if effect.kind is EffectKind.DELAY:
         return f"a {_number(effect.timeMs)} ms delay"
+    if effect.kind is EffectKind.CHORUS:
+        return (
+            f"a chorus swinging {_number(effect.depthMs or 0)} ms around "
+            f"{_number(effect.delayMs or 0)} ms at {_number(effect.rateHz or 0)} Hz"
+        )
     return f"reverb on a {'large' if effect.roomSize >= 0.5 else 'small'} room"
 
 
@@ -116,6 +124,12 @@ def _stage_phrases(voice: Voice) -> list[str]:
         stages.append(_string_phrase(voice.string))
     if voice.modal is not None:
         stages.append(_modal_phrase(voice.modal))
+    if voice.wavetable is not None:
+        stages.append(_wavetable_phrase(voice.wavetable))
+    if voice.additive is not None:
+        stages.append(_additive_phrase(voice.additive))
+    if voice.unison is not None:
+        stages.append(_unison_phrase(voice.unison))
     if voice.am is not None:
         mode = "ring modulation" if voice.am.mode is AmMode.RING else "amplitude modulation"
         stages.append(f"{mode} at {_number(voice.am.rateHz)} Hz")
@@ -215,6 +229,42 @@ def _modal_phrase(modal: Modal) -> str:
     )
 
 
+def _wavetable_phrase(wavetable: Wavetable) -> str:
+    """A wavetable: how many frames, how many harmonics, and where the note reads."""
+    count = len(wavetable.frames)
+    harmonics = max(len(frame.harmonics) for frame in wavetable.frames)
+    noun = "frame" if count == 1 else "frames"
+    read = f"read at {_number(wavetable.position)}"
+    if wavetable.positionEnd is not None and wavetable.positionEnd != wavetable.position:
+        read = (
+            f"swept from {_number(wavetable.position)} to {_number(wavetable.positionEnd)} "
+            f"over {_number(wavetable.sweepMs)} ms"
+        )
+    return f"a wavetable of {count} {noun} up to harmonic {harmonics}, {read}"
+
+
+def _additive_phrase(additive: Additive) -> str:
+    """An additive voice: its partials, how long the longest lasts, its roll-off."""
+    ratios = ", ".join(f"{round(p.ratio, 2):g}x" for p in additive.partials)
+    count = len(additive.partials)
+    noun = "partial" if count == 1 else "partials"
+    phrase = f"{count} {noun} at {ratios} the pitch"
+    if all(p.decayMs > 0 for p in additive.partials):
+        longest = max(p.decayMs for p in additive.partials)
+        phrase += f", the longest {_number(longest)} ms to silence"
+    elif any(p.decayMs > 0 for p in additive.partials):
+        phrase += ", some fading and some held"
+    if additive.stretch > 0:
+        phrase += f", stretched by {_number(additive.stretch)}"
+    if additive.brightness < 1:
+        phrase += f", rolled off at brightness {_number(additive.brightness)}"
+    return phrase
+
+
+def _unison_phrase(unison: Unison) -> str:
+    return f"{unison.voices} unison copies spread {_number(unison.detuneCents)} cents"
+
+
 def _expression_phrases(voice: Voice) -> list[str]:
     """Music mode: what each note does beyond its pitch and level."""
     phrases: list[str] = []
@@ -234,6 +284,14 @@ def _expression_phrases(voice: Voice) -> list[str]:
                 (
                     "strike's brightness",
                     voice.touch.cutoffOctaves if voice.modal is not None else 0.0,
+                ),
+                (
+                    "table position",
+                    voice.touch.cutoffOctaves if voice.wavetable is not None else 0.0,
+                ),
+                (
+                    "partials' brightness",
+                    voice.touch.cutoffOctaves if voice.additive is not None else 0.0,
                 ),
                 ("attack", voice.touch.attackOctaves),
             )
@@ -277,6 +335,10 @@ def explain_voice(voice: Voice, channels: int = 1) -> str:
         character = "a struck string" if struck else "a plucked string"
     if voice.modal is not None:
         character = "a struck modal bank"
+    if voice.wavetable is not None:
+        character = "a wavetable tone"
+    if voice.additive is not None:
+        character = "an additive tone"
     opening = " ".join(part for part in (character, _pitch_phrase(voice)) if part)
     sentence = f"{opening} that {_envelope_phrase(voice.ampEnv)}"
     stages = _stage_phrases(voice)
