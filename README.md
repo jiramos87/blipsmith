@@ -9,7 +9,7 @@ drive a physical synth, one typed setter at a time, and a human drives the same
 engine from a terminal. Both paths run the same code and produce the same bytes.
 
 **Same spec, same seed, identical WAV. Every time, on every supported platform.**
-That is the contract the whole design serves, and CI proves it by rendering 52
+That is the contract the whole design serves, and CI proves it by rendering 56
 golden specs on Linux x86_64 and macOS arm64 and comparing SHA-256 sets.
 
 ## Install
@@ -40,7 +40,7 @@ claude mcp add blipsmith -- uv run --project /path/to/blipsmith blipsmith-mcp
 ```
 
 Then ask for a sound. The agent holds one session, shaped like a synth front
-panel: 38 tools, grouped so that one call sets one block of related parameters.
+panel: 39 tools, grouped so that one call sets one block of related parameters.
 
 > **You:** Make me a laser shot, but heavier and dirtier than the stock one.
 
@@ -272,6 +272,32 @@ string. A voice without it plays exactly as before.
 The MCP verb is `set_string`. The behaviour is specified in
 `docs/prd/blipsmith-strings.md`.
 
+### Modal banks: skins, cymbals, wood
+
+A music-mode voice can trade its oscillator for a modal bank: up to sixteen
+tuned resonators struck once per note, each ringing at its own frequency and
+dying at its own pace. That is how a drum skin, a cymbal, a wood block or a
+mallet bar sounds, and what the oscillators cannot make. A voice without it
+plays exactly as before.
+
+- **Modes.** Each mode has a `ratio` to the voice's pitch (0.1 to 32), a
+  `level` and a `decayMs` (the time it takes to fall 60 dB). A skin rings near
+  the Bessel ratios 1, 1.59, 2.14, 2.30, 2.65; a cymbal at many close,
+  inharmonic ratios with long decays.
+- **Strike.** `brightness` (0 to 1) sets how hard and bright the strike is: a
+  soft mallet rings only the low modes, a hard stick rings them all.
+- **Stable by construction.** Each mode is a point turned by its angle and
+  shrunk by its decay every frame, the shrink held below 1, so every legal
+  setting dies away. A turn keeps the point's size, so a pitch drop, a glide or
+  vibrato moves the modes without the level jumping.
+- **On a kit** the bank plays the voice's own pitch on every hit; noise voices
+  on the same key add a slap, a crack or a wash. **Touch** reaches the
+  brightness through `cutoffOctaves`, so a ghost note is darker, not only
+  quieter.
+
+The MCP verb is `set_modal`. The behaviour is specified in
+`docs/prd/blipsmith-drum-kit-two.md`.
+
 ## Determinism, and how it is enforced
 
 The audio path uses fixed-point phase accumulators and baked wavetables, with no
@@ -288,7 +314,7 @@ That invariant is enforced, not just intended:
   `sin()` and asserts the check rejects it, so the gate is known to be able to
   fail.
 - `-ffp-contract=off`, no fast-math, C++17, pinned in `CMakeLists.txt`.
-- 52 golden specs cover every waveform, every processing stage and every preset
+- 56 golden specs cover every waveform, every processing stage and every preset
   archetype. Each one asserts its recorded hash, non-clipping output, and a peak
   at the normalization target.
 - CI renders that corpus on Linux x86_64 and macOS arm64 and diffs the hash

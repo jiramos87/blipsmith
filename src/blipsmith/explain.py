@@ -26,6 +26,7 @@ from blipsmith.spec import (
     Excitation,
     Fm4,
     LfoTarget,
+    Modal,
     Operator,
     SoundSpec,
     String,
@@ -113,6 +114,8 @@ def _stage_phrases(voice: Voice) -> list[str]:
         stages.append(_fm4_phrase(voice.fm4))
     if voice.string is not None:
         stages.append(_string_phrase(voice.string))
+    if voice.modal is not None:
+        stages.append(_modal_phrase(voice.modal))
     if voice.am is not None:
         mode = "ring modulation" if voice.am.mode is AmMode.RING else "amplitude modulation"
         stages.append(f"{mode} at {_number(voice.am.rateHz)} Hz")
@@ -199,6 +202,19 @@ def _string_phrase(string: String) -> str:
     return phrase
 
 
+def _modal_phrase(modal: Modal) -> str:
+    """A modal bank: how hard it is struck, which modes ring and for how long."""
+    # Two decimals: a skin's 1.59 and 2.14 are what make it a skin.
+    ratios = ", ".join(f"{round(mode.ratio, 2):g}x" for mode in modal.modes)
+    longest = max(mode.decayMs for mode in modal.modes)
+    count = len(modal.modes)
+    noun = "mode" if count == 1 else "modes"
+    return (
+        f"a strike with brightness {_number(modal.brightness)} ringing {count} {noun} at "
+        f"{ratios} the pitch, the longest {_number(longest)} ms to silence"
+    )
+
+
 def _expression_phrases(voice: Voice) -> list[str]:
     """Music mode: what each note does beyond its pitch and level."""
     phrases: list[str] = []
@@ -214,6 +230,10 @@ def _expression_phrases(voice: Voice) -> list[str]:
                 (
                     "string's brightness",
                     voice.touch.cutoffOctaves if voice.string is not None else 0.0,
+                ),
+                (
+                    "strike's brightness",
+                    voice.touch.cutoffOctaves if voice.modal is not None else 0.0,
                 ),
                 ("attack", voice.touch.attackOctaves),
             )
@@ -255,6 +275,8 @@ def explain_voice(voice: Voice, channels: int = 1) -> str:
     if voice.string is not None:
         struck = voice.string.excitation is Excitation.STRIKE
         character = "a struck string" if struck else "a plucked string"
+    if voice.modal is not None:
+        character = "a struck modal bank"
     opening = " ".join(part for part in (character, _pitch_phrase(voice)) if part)
     sentence = f"{opening} that {_envelope_phrase(voice.ampEnv)}"
     stages = _stage_phrases(voice)

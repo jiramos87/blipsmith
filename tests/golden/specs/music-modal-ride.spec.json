@@ -1,0 +1,235 @@
+{
+  "version": 2,
+  "seed": 61,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 3200,
+  "meta": {
+    "name": "music-modal-ride",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "A ride cymbal: sixteen inharmonic modes struck by a stick over a highpassed wash, and a ride bell of six brighter modes, on a swung jazz ride pattern."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "key": 51,
+      "fundamentalHz": 520,
+      "modal": {
+        "brightness": 0.7,
+        "modes": [
+          {
+            "ratio": 1.0,
+            "level": 0.45,
+            "decayMs": 2600
+          },
+          {
+            "ratio": 1.37,
+            "level": 0.55,
+            "decayMs": 2400
+          },
+          {
+            "ratio": 1.92,
+            "level": 0.7,
+            "decayMs": 2300
+          },
+          {
+            "ratio": 2.41,
+            "level": 0.8,
+            "decayMs": 2200
+          },
+          {
+            "ratio": 2.88,
+            "level": 0.85,
+            "decayMs": 2100
+          },
+          {
+            "ratio": 3.43,
+            "level": 0.9,
+            "decayMs": 2000
+          },
+          {
+            "ratio": 3.97,
+            "level": 0.9,
+            "decayMs": 1900
+          },
+          {
+            "ratio": 4.51,
+            "level": 0.85,
+            "decayMs": 1800
+          },
+          {
+            "ratio": 5.06,
+            "level": 0.8,
+            "decayMs": 1700
+          },
+          {
+            "ratio": 5.62,
+            "level": 0.75,
+            "decayMs": 1600
+          },
+          {
+            "ratio": 6.21,
+            "level": 0.7,
+            "decayMs": 1500
+          },
+          {
+            "ratio": 6.83,
+            "level": 0.6,
+            "decayMs": 1400
+          },
+          {
+            "ratio": 7.42,
+            "level": 0.55,
+            "decayMs": 1300
+          },
+          {
+            "ratio": 8.07,
+            "level": 0.5,
+            "decayMs": 1200
+          },
+          {
+            "ratio": 8.71,
+            "level": 0.45,
+            "decayMs": 1100
+          },
+          {
+            "ratio": 9.38,
+            "level": 0.4,
+            "decayMs": 1000
+          }
+        ]
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 1800
+      },
+      "track": 0,
+      "pan": 0.3,
+      "mixDb": -4
+    },
+    {
+      "waveform": "noise_white",
+      "key": 51,
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 900,
+        "sustainLevel": 0,
+        "releaseMs": 300
+      },
+      "filter": {
+        "type": "highpass",
+        "cutoffHz": 5000,
+        "resonance": 0.7
+      },
+      "track": 0,
+      "pan": 0.3,
+      "mixDb": -20
+    },
+    {
+      "waveform": "sine",
+      "key": 53,
+      "fundamentalHz": 830,
+      "modal": {
+        "brightness": 0.85,
+        "modes": [
+          {
+            "ratio": 1.0,
+            "level": 1.0,
+            "decayMs": 2400
+          },
+          {
+            "ratio": 2.02,
+            "level": 0.7,
+            "decayMs": 2000
+          },
+          {
+            "ratio": 2.87,
+            "level": 0.5,
+            "decayMs": 1600
+          },
+          {
+            "ratio": 3.98,
+            "level": 0.45,
+            "decayMs": 1300
+          },
+          {
+            "ratio": 5.1,
+            "level": 0.35,
+            "decayMs": 1000
+          },
+          {
+            "ratio": 6.3,
+            "level": 0.25,
+            "decayMs": 800
+          }
+        ]
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 1500
+      },
+      "track": 0,
+      "pan": 0.3,
+      "mixDb": -6
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "ride",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 51,
+            "velocity": 0.8,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 51,
+            "velocity": 0.7,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 1.67,
+            "midiNote": 51,
+            "velocity": 0.45,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 51,
+            "velocity": 0.8,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 3,
+            "midiNote": 51,
+            "velocity": 0.7,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 3.67,
+            "midiNote": 51,
+            "velocity": 0.45,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 4,
+            "midiNote": 53,
+            "velocity": 0.9,
+            "durationBeats": 0.25
+          }
+        ]
+      }
+    ]
+  }
+}

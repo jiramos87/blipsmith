@@ -12,8 +12,10 @@ from typing import Any
 
 import pytest
 
+from blipsmith.explain import explain_spec
 from blipsmith.result import SpecError
 from blipsmith.schema import get_schema
+from blipsmith.session import Session
 from blipsmith.spec import parse_spec, to_canonical_json, validate_spec
 
 
@@ -134,3 +136,66 @@ def test_schema_publishes_the_modal_block() -> None:
     mode = schema["models"]["Mode"]["fields"]
     assert mode["ratio"]["maximum"] == 32
     assert mode["decayMs"]["minimum"] == 5
+
+
+# --- The session verb and the explanation ------------------------------------------
+
+
+def music_session() -> Session:
+    session = Session()
+    session.new_voice("sine")
+    session.set_render_options(version=2)
+    return session
+
+
+def test_set_modal_starts_the_bank_and_patches_it() -> None:
+    session = music_session()
+    session.set_modal(brightness=0.3)
+    session.set_modal(modes=[{"ratio": 1.0}, {"ratio": 1.59, "level": 0.5, "decayMs": 200.0}])
+    modal = session.spec.voices[0].modal
+    assert modal is not None
+    assert modal.brightness == 0.3
+    assert [(m.ratio, m.level, m.decayMs) for m in modal.modes] == [
+        (1.0, 1.0, 500.0),
+        (1.59, 0.5, 200.0),
+    ]
+    session.set_modal(clear=True)
+    assert session.spec.voices[0].modal is None
+
+
+def test_set_modal_refuses_an_empty_bank() -> None:
+    session = music_session()
+    with pytest.raises(SpecError):
+        session.set_modal(modes=[])
+    assert session.spec.voices[0].modal is None
+
+
+def test_set_modal_is_refused_on_version_one() -> None:
+    session = Session()
+    session.new_voice("sine")
+    with pytest.raises(SpecError) as caught:
+        session.set_modal()
+    assert caught.value.error.field == "version"
+
+
+def test_the_explanation_names_the_bank() -> None:
+    spec = parse_spec(
+        music(
+            {
+                "waveform": "sine",
+                "fundamentalHz": 330,
+                "modal": {
+                    "brightness": 0.4,
+                    "modes": [{"ratio": 1, "decayMs": 400}, {"ratio": 1.59, "decayMs": 250}],
+                },
+                "touch": {"cutoffOctaves": 2},
+            }
+        )
+    )
+    text = explain_spec(spec)
+    assert "a struck modal bank at" in text
+    assert (
+        "a strike with brightness 0.4 ringing 2 modes at 1x, 1.59x the pitch, "
+        "the longest 400 ms to silence"
+    ) in text
+    assert "touch moving the strike's brightness with velocity" in text

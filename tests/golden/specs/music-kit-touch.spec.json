@@ -1,0 +1,147 @@
+{
+  "version": 2,
+  "seed": 64,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2400,
+  "meta": {
+    "name": "music-kit-touch",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Touch on the kit: a modal skin and a filtered noise snare, each hit as a ghost, a plain note and an accent, darker when soft and brighter when hard."
+  },
+  "voices": [
+    {
+      "waveform": "sine",
+      "key": 63,
+      "fundamentalHz": 330,
+      "modal": {
+        "brightness": 0.3,
+        "modes": [
+          {
+            "ratio": 1.0,
+            "level": 1.0,
+            "decayMs": 420
+          },
+          {
+            "ratio": 1.59,
+            "level": 0.55,
+            "decayMs": 260
+          },
+          {
+            "ratio": 2.14,
+            "level": 0.45,
+            "decayMs": 200
+          },
+          {
+            "ratio": 2.3,
+            "level": 0.35,
+            "decayMs": 170
+          },
+          {
+            "ratio": 2.65,
+            "level": 0.3,
+            "decayMs": 140
+          },
+          {
+            "ratio": 2.92,
+            "level": 0.2,
+            "decayMs": 120
+          },
+          {
+            "ratio": 3.16,
+            "level": 0.15,
+            "decayMs": 100
+          },
+          {
+            "ratio": 3.5,
+            "level": 0.12,
+            "decayMs": 90
+          }
+        ]
+      },
+      "touch": {
+        "pivot": 0.6,
+        "cutoffOctaves": 4
+      },
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 200
+      },
+      "track": 0,
+      "pan": -0.2
+    },
+    {
+      "waveform": "noise_white",
+      "key": 38,
+      "ampEnv": {
+        "attackMs": 0,
+        "decayMs": 120,
+        "sustainLevel": 0,
+        "releaseMs": 60
+      },
+      "filter": {
+        "type": "bandpass",
+        "cutoffHz": 1800,
+        "resonance": 1.0
+      },
+      "touch": {
+        "pivot": 0.6,
+        "cutoffOctaves": 1.5
+      },
+      "track": 0,
+      "pan": 0.2,
+      "mixDb": -4
+    }
+  ],
+  "composition": {
+    "tempoBpm": 120,
+    "tracks": [
+      {
+        "name": "kit",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 63,
+            "velocity": 0.25,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 63,
+            "velocity": 0.6,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 63,
+            "velocity": 1.0,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 38,
+            "velocity": 0.25,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 2.5,
+            "midiNote": 38,
+            "velocity": 0.6,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 3,
+            "midiNote": 38,
+            "velocity": 1.0,
+            "durationBeats": 0.25
+          }
+        ]
+      }
+    ]
+  }
+}

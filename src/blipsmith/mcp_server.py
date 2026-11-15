@@ -311,6 +311,26 @@ def build_server(session: Session | None = None) -> FastMCP:
         )
 
     @server.tool()
+    def set_modal(
+        brightness: float | None = None,
+        modes: list[dict[str, float]] | None = None,
+        clear: bool = False,
+    ) -> dict[str, Any]:
+        """Music mode: a bank of tuned resonators struck once replaces this
+        voice's oscillator (the waveform must be sine, and the voice cannot also
+        have fm, fm4 or string): a drum skin, a cymbal, a wood block, a bar.
+        `modes` replaces the whole bank, 1 to 16 entries of `{ratio, level,
+        decayMs}`: `ratio` 0.1 to 32 of the voice's pitch, `level` 0 to 1, `decayMs`
+        5 to 30000 (time to fall 60 dB). A skin rings near 1, 1.59, 2.14, 2.30,
+        2.65; a cymbal at many close inharmonic ratios with long decays.
+        `brightness` 0 to 1 is how hard and bright the strike is (a soft mallet
+        rings only the low modes); touch's cutoffOctaves moves it with velocity.
+        Keep the amp envelope's attack 0 and sustain 1; its release mutes the
+        bank. On a keyed voice the bank plays the voice's own pitch. `clear`
+        removes it."""
+        return _guarded(lambda: state.set_modal(brightness, modes, clear))
+
+    @server.tool()
     def set_vibrato(
         delayMs: float | None = None,
         fadeMs: float | None = None,

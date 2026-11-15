@@ -223,6 +223,26 @@ STAGE_PROBES: dict[str, Callable[[SoundSpec], bool]] = {
     "string: touch on the brightness": lambda spec: _has_voice(
         spec, lambda v: v.string is not None and v.touch is not None and v.touch.cutoffOctaves != 0
     ),
+    # docs/prd/blipsmith-drum-kit-two.md
+    "modal: a full bank of sixteen modes": lambda spec: _has_voice(
+        spec, lambda v: v.modal is not None and len(v.modal.modes) == 16
+    ),
+    "modal: a skin following a pitch drop": lambda spec: _has_voice(
+        spec,
+        lambda v: v.modal is not None and v.modEnv is not None and v.modEnv.target == "pitch",
+    ),
+    "modal: touch on the strike": lambda spec: _has_voice(
+        spec, lambda v: v.modal is not None and v.touch is not None and v.touch.cutoffOctaves != 0
+    ),
+    "kit: a noise swirl under a cutoff LFO": lambda spec: _has_voice(
+        spec,
+        lambda v: (
+            v.key is not None
+            and v.waveform == "noise_white"
+            and v.lfo is not None
+            and v.lfo.target == "cutoff"
+        ),
+    ),
 }
 
 

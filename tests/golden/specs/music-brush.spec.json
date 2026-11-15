@@ -1,0 +1,183 @@
+{
+  "version": 2,
+  "seed": 63,
+  "sampleRate": 22050,
+  "channels": 2,
+  "durationMs": 2800,
+  "meta": {
+    "name": "music-brush",
+    "tags": [
+      "golden",
+      "music"
+    ],
+    "description": "Brushes: a swirl of held noise whose bandpass sweeps round under an LFO, a soft brush tap with a slow edge and its ghost notes, and a shaker."
+  },
+  "voices": [
+    {
+      "waveform": "noise_white",
+      "key": 40,
+      "ampEnv": {
+        "attackMs": 180,
+        "decayMs": 0,
+        "sustainLevel": 1,
+        "releaseMs": 350
+      },
+      "filter": {
+        "type": "bandpass",
+        "cutoffHz": 2200,
+        "resonance": 0.9
+      },
+      "lfo": {
+        "target": "cutoff",
+        "shape": "sine",
+        "rateHz": 1.6,
+        "depth": 0.6
+      },
+      "track": 0,
+      "mixDb": -12
+    },
+    {
+      "waveform": "noise_white",
+      "key": 38,
+      "ampEnv": {
+        "attackMs": 4,
+        "decayMs": 110,
+        "sustainLevel": 0,
+        "releaseMs": 60
+      },
+      "filter": {
+        "type": "bandpass",
+        "cutoffHz": 2800,
+        "resonance": 0.8
+      },
+      "touch": {
+        "pivot": 0.6,
+        "cutoffOctaves": 1.2,
+        "attackOctaves": 1
+      },
+      "track": 0,
+      "mixDb": -6
+    },
+    {
+      "waveform": "noise_white",
+      "key": 70,
+      "ampEnv": {
+        "attackMs": 9,
+        "decayMs": 55,
+        "sustainLevel": 0,
+        "releaseMs": 30
+      },
+      "filter": {
+        "type": "highpass",
+        "cutoffHz": 6000,
+        "resonance": 0.7
+      },
+      "touch": {
+        "pivot": 0.6,
+        "cutoffOctaves": 0.8
+      },
+      "track": 1,
+      "pan": 0.35,
+      "mixDb": -12
+    }
+  ],
+  "composition": {
+    "tempoBpm": 100,
+    "tracks": [
+      {
+        "name": "brushes",
+        "notes": [
+          {
+            "startBeat": 0,
+            "midiNote": 40,
+            "velocity": 0.6,
+            "durationBeats": 2.0
+          },
+          {
+            "startBeat": 1,
+            "midiNote": 38,
+            "velocity": 0.85,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 1.67,
+            "midiNote": 38,
+            "velocity": 0.3,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 2.67,
+            "midiNote": 38,
+            "velocity": 0.3,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 3,
+            "midiNote": 38,
+            "velocity": 0.85,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 2,
+            "midiNote": 40,
+            "velocity": 0.6,
+            "durationBeats": 2.0
+          }
+        ]
+      },
+      {
+        "name": "shaker",
+        "notes": [
+          {
+            "startBeat": 0.0,
+            "midiNote": 70,
+            "velocity": 0.45,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 0.5,
+            "midiNote": 70,
+            "velocity": 0.75,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 1.0,
+            "midiNote": 70,
+            "velocity": 0.45,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 1.5,
+            "midiNote": 70,
+            "velocity": 0.75,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 2.0,
+            "midiNote": 70,
+            "velocity": 0.45,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 2.5,
+            "midiNote": 70,
+            "velocity": 0.75,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 3.0,
+            "midiNote": 70,
+            "velocity": 0.45,
+            "durationBeats": 0.25
+          },
+          {
+            "startBeat": 3.5,
+            "midiNote": 70,
+            "velocity": 0.75,
+            "durationBeats": 0.25
+          }
+        ]
+      }
+    ]
+  }
+}

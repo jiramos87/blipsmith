@@ -482,6 +482,19 @@ class Session:
             },
         )
 
+    def set_modal(
+        self,
+        brightness: float | None = None,
+        modes: list[dict[str, float]] | None = None,
+        clear: bool = False,
+    ) -> list[SpecWarning]:
+        """Patch the voice's modal bank, starting it from its defaults the first
+        time. `modes`, when given, replaces the whole bank (1 to 16 modes, each
+        `{ratio, level, decayMs}`)."""
+        return self._expression_block(
+            "modal", "a modal bank", clear, {"brightness": brightness, "modes": modes}
+        )
+
     def set_vibrato(
         self,
         delayMs: float | None = None,
