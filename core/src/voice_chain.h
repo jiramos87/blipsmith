@@ -15,6 +15,7 @@
 #include "filter.h"
 #include "fm4.h"
 #include "lofi.h"
+#include "modal.h"
 #include "mod.h"
 #include "noise.h"
 #include "osc.h"
@@ -39,6 +40,11 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
     std::optional<PluckedString> string;
     if (voice.hasString) {
         string.emplace(voice.string, spec.sampleRate);
+    }
+    // And a modal bank; it is struck on the note's first frame.
+    std::optional<ModalBank> modal;
+    if (voice.hasModal) {
+        modal.emplace(voice.modal, spec.sampleRate);
     }
 
     // A static cutoff needs its coefficients worked out once. A modulated one is
@@ -72,6 +78,10 @@ void run_voice_chain(const Spec& spec, const Voice& voice, int voiceIndex, doubl
                 }
                 if (string) {
                     sample = string->sample(modulation.carrierTurns(), noise);
+                    break;
+                }
+                if (modal) {
+                    sample = modal->sample(modulation.carrierTurns());
                     break;
                 }
                 sample = oscillator_sample(voice.waveform, phase + modulation.fmPhaseOffset(),

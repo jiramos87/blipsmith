@@ -2,6 +2,7 @@
 
 #include "env.h"
 #include "fm4.h"
+#include "modal.h"
 #include "osc.h"
 #include "pluck.h"
 #include "tables.h"
@@ -68,6 +69,16 @@ void apply_touch(const Voice& voice, double velocity, Voice& out) {
             brightness = 1.0;
         }
         out.string.brightness = brightness;
+    }
+    // On a modal bank they move the strike's corner.
+    if (voice.hasModal && touch.cutoffOctaves != 0.0) {
+        double brightness = voice.modal.brightness + touch.cutoffOctaves * t / kModalBrightnessOctaves;
+        if (brightness < 0.0) {
+            brightness = 0.0;
+        } else if (brightness > 1.0) {
+            brightness = 1.0;
+        }
+        out.modal.brightness = brightness;
     }
     // The ceiling below Nyquist is the filter's own, applied where it designs.
     if (voice.hasFilter && touch.cutoffOctaves != 0.0) {
