@@ -26,6 +26,7 @@ from typing import Any, Literal, TypeVar, Union, get_args, get_origin
 from pydantic import BaseModel, ConfigDict, Field, ValidationError, model_validator
 
 from blipsmith.ranges import (
+    ADDITIVE_MAX_PARTIALS,
     DURATION_MS_COMPOSITION,
     FM4_OPERATORS,
     MASTER_EFFECT_KINDS,
@@ -38,6 +39,8 @@ from blipsmith.ranges import (
     SPEC_VERSION,
     TRACK_COUNT,
     TRACK_NAME_MAX_LENGTH,
+    WAVETABLE_MAX_FRAMES,
+    WAVETABLE_MAX_HARMONICS,
     NumericRange,
     cutoff_range_for,
     track_range_for,
@@ -103,6 +106,7 @@ class EffectKind(StrEnum):
     WAVEFOLD = "wavefold"
     DELAY = "delay"
     REVERB = "reverb"
+    CHORUS = "chorus"
 
 
 class SampleRate(IntEnum):
@@ -183,11 +187,16 @@ class LoFi(SpecModel):
     decimation: int = int(RANGES[("LoFi", "decimation")].default)
 
 
+CHORUS_FIELDS = ("delayMs", "depthMs", "rateHz")
+
+
 class Effect(SpecModel):
     """One flat model per the pinned contract. Each kind reads the parameters
     that apply to it and ignores the rest: distortion and wavefold read `drive`,
     delay reads `timeMs`/`feedback`/`mixWet`, reverb reads
-    `roomSize`/`damping`/`mixWet`."""
+    `roomSize`/`damping`/`mixWet`. A chorus (music mode) reads
+    `delayMs`/`depthMs`/`rateHz`/`mixWet`; those three are left out of the dump
+    unless set, and a chorus fills them with their defaults."""
 
     kind: EffectKind
     drive: float = RANGES[("Effect", "drive")].default
@@ -196,6 +205,24 @@ class Effect(SpecModel):
     mixWet: float = RANGES[("Effect", "mixWet")].default
     roomSize: float = RANGES[("Effect", "roomSize")].default
     damping: float = RANGES[("Effect", "damping")].default
+    delayMs: float | None = Field(default=None, exclude_if=_absent)
+    depthMs: float | None = Field(default=None, exclude_if=_absent)
+    rateHz: float | None = Field(default=None, exclude_if=_absent)
+
+    @model_validator(mode="after")
+    def _chorus_defaults(self) -> Effect:
+        if self.kind is EffectKind.CHORUS:
+            for name in CHORUS_FIELDS:
+                if getattr(self, name) is None:
+                    setattr(self, name, RANGES[("Effect", name)].default)
+        return self
+
+    @property
+    def is_music(self) -> bool:
+        """Whether only the music mode may hold this effect."""
+        return self.kind is EffectKind.CHORUS or any(
+            getattr(self, name) is not None for name in CHORUS_FIELDS
+        )
 
 
 class Touch(SpecModel):
@@ -304,6 +331,73 @@ class Modal(SpecModel):
     )
 
 
+class Frame(SpecModel):
+    """One single-cycle shape of a wavetable, as the amplitudes of its harmonics
+    in sine phase, the fundamental first: `[1]` is a sine, `[1, 0.5, 0.333]` the
+    start of a saw. The frame is scaled to the loudness of one full sine, so its
+    shape sets the tone and not the level."""
+
+    harmonics: list[float] = Field(
+        default_factory=lambda: [1.0], min_length=1, max_length=WAVETABLE_MAX_HARMONICS
+    )
+
+
+def _default_frames() -> list[Frame]:
+    return [Frame()]
+
+
+class Wavetable(SpecModel):
+    """Music mode: a tone that morphs through single-cycle frames, in place of
+    the voice's oscillator. Each note starts at `position` (0 the first frame, 1
+    the last) and, when `positionEnd` is set, moves to it over `sweepMs` and
+    holds; between two frames their harmonics crossfade. Harmonics a note cannot
+    carry below Nyquist fade out, so a high note never folds back."""
+
+    frames: list[Frame] = Field(
+        default_factory=_default_frames, min_length=1, max_length=WAVETABLE_MAX_FRAMES
+    )
+    position: float = RANGES[("Wavetable", "position")].default
+    positionEnd: float | None = Field(default=None, exclude_if=_absent)
+    sweepMs: float = RANGES[("Wavetable", "sweepMs")].default
+
+
+class Partial(SpecModel):
+    """One partial of an additive voice: a sine at `ratio` times the voice's
+    pitch, at `level` against the others, falling 60 dB over `decayMs` (0 holds
+    it for the whole note)."""
+
+    ratio: float = RANGES[("Partial", "ratio")].default
+    level: float = RANGES[("Partial", "level")].default
+    decayMs: float = RANGES[("Partial", "decayMs")].default
+
+
+def _default_partials() -> list[Partial]:
+    return [Partial()]
+
+
+class Additive(SpecModel):
+    """Music mode: a tone built from sine partials, in place of the voice's
+    oscillator: organ drawbars, a bell's or a tine's partials, a round bass whose
+    upper partials fade first. `stretch` sharpens the upper partials as a piano
+    string does; `brightness` rolls them off. The partials together are scaled to
+    the loudness of one full sine."""
+
+    brightness: float = RANGES[("Additive", "brightness")].default
+    stretch: float = RANGES[("Additive", "stretch")].default
+    partials: list[Partial] = Field(
+        default_factory=_default_partials, min_length=1, max_length=ADDITIVE_MAX_PARTIALS
+    )
+
+
+class Unison(SpecModel):
+    """Music mode: each note plays as `voices` copies of the voice, spread evenly
+    across `detuneCents`, each at one over the square root of the count so the
+    stack sounds as loud as one copy. Their start phases come from the seed."""
+
+    voices: int = int(RANGES[("Unison", "voices")].default)
+    detuneCents: float = RANGES[("Unison", "detuneCents")].default
+
+
 class Limiter(SpecModel):
     """The master safety gate. There is deliberately no `enabled` field: the PRD
     makes the limiter and clip guard non-optional on every render."""
@@ -352,6 +446,12 @@ class Voice(SpecModel):
     string: String | None = music_field()
     # Music mode: a bank of tuned resonators, in place of the oscillator.
     modal: Modal | None = music_field()
+    # Music mode: single-cycle frames crossfaded over the note, in place of the oscillator.
+    wavetable: Wavetable | None = music_field()
+    # Music mode: a tone built from partials, in place of the oscillator.
+    additive: Additive | None = music_field()
+    # Music mode: detuned copies of the voice on every note.
+    unison: Unison | None = music_field()
 
 
 class Note(SpecModel):
@@ -447,15 +547,35 @@ class SoundSpec(SpecModel):
         return self
 
 
+MUSIC_VOICE_FIELDS = (
+    "key",
+    "touch",
+    "glide",
+    "vibrato",
+    "fm4",
+    "string",
+    "modal",
+    "wavetable",
+    "additive",
+    "unison",
+)
+
+# The blocks that replace a voice's oscillator, in the order a refusal names them.
+SOURCE_BLOCKS = ("fm", "fm4", "string", "modal", "wavetable", "additive")
+
+
 def music_fields_in(spec: SoundSpec) -> list[str]:
     """The path of every music-mode field the spec sets, in spec order."""
     found: list[str] = []
     if spec.master.effects is not None:
         found.append("master.effects")
     for index, voice in enumerate(spec.voices):
-        for name in ("key", "touch", "glide", "vibrato", "fm4", "string", "modal"):
+        for name in MUSIC_VOICE_FIELDS:
             if getattr(voice, name) is not None:
                 found.append(f"voices[{index}].{name}")
+        for position, effect in enumerate(voice.effects):
+            if effect.is_music:
+                found.append(f"voices[{index}].effects[{position}]")
     if spec.composition is not None:
         if spec.composition.loop is not None:
             found.append("composition.loop")
@@ -544,6 +664,7 @@ def _check_music(spec: SoundSpec) -> None:
                 f"must be 'sine', got {voice.waveform.value!r}.",
                 field=f"voices[{index}].waveform",
             )
+        _check_new_sources(voice, index)
     for index, effect in enumerate(spec.master.effects or []):
         if effect.kind.value not in MASTER_EFFECT_KINDS:
             raise invalid_spec(
@@ -552,6 +673,33 @@ def _check_music(spec: SoundSpec) -> None:
                 field=f"master.effects[{index}].kind",
                 valid_values=list(MASTER_EFFECT_KINDS),
             )
+
+
+def _check_new_sources(voice: Voice, index: int) -> None:
+    """A wavetable or an additive voice replaces the oscillator, as a string or a
+    modal bank does; unison copies whatever pitched source the voice has."""
+    for name in ("wavetable", "additive"):
+        if getattr(voice, name) is None:
+            continue
+        others = [o for o in SOURCE_BLOCKS if o != name and getattr(voice, o) is not None]
+        if others:
+            raise invalid_spec(
+                f"voices[{index}].{name}: the {name} replaces the oscillator, so it cannot sit "
+                f"beside {others[0]}. Remove one of them.",
+                field=f"voices[{index}].{name}",
+            )
+        if voice.waveform is not Waveform.SINE:
+            raise invalid_spec(
+                f"voices[{index}].{name}: the {name} replaces the oscillator, so the waveform "
+                f"must be 'sine', got {voice.waveform.value!r}.",
+                field=f"voices[{index}].waveform",
+            )
+    if voice.unison is not None and voice.waveform in (Waveform.NOISE_WHITE, Waveform.NOISE_PINK):
+        raise invalid_spec(
+            f"voices[{index}].unison: unison detunes copies of a pitched voice, and "
+            f"{voice.waveform.value!r} has no pitch. Remove the unison or pick a pitched waveform.",
+            field=f"voices[{index}].unison",
+        )
 
 
 # --- Annotation helpers (shared with schema.py) --------------------------------
@@ -695,6 +843,8 @@ def _clamp_model(
             for index, entry in enumerate(value):
                 if isinstance(entry, BaseModel):
                     _clamp_model(entry, f"{child}[{index}]", warnings, overrides)
+                elif isinstance(entry, int | float) and not isinstance(entry, bool):
+                    _clamp_entry(value, index, (class_name, name), f"{child}[{index}]", warnings)
             continue
         # Enums are a closed set already, and bool is an int subclass we never mean.
         if isinstance(value, Enum | bool) or not isinstance(value, int | float):
@@ -722,6 +872,37 @@ def _clamp_model(
                     ),
                 )
             )
+
+
+def _clamp_entry(
+    values: list[Any],
+    index: int,
+    key: tuple[str, str],
+    child: str,
+    warnings: list[SpecWarning],
+) -> None:
+    """One number of a list of numbers (a wavetable frame's harmonics)."""
+    bounds = RANGES.get(key)
+    value = values[index]
+    if bounds is None:
+        return
+    if not math.isfinite(value):
+        raise invalid_spec(f"{child}: {value!r} is not a finite number.", field=child)
+    applied = bounds.clamp(value)
+    if applied != value:
+        values[index] = applied
+        warnings.append(
+            SpecWarning(
+                code=WarningCode.CLAMPED,
+                param=child,
+                requested=value,
+                applied=applied,
+                message=(
+                    f"{child}: requested {value}, applied {applied} "
+                    f"(valid range {bounds.minimum} to {bounds.maximum})."
+                ),
+            )
+        )
 
 
 def clamp_model(model: ModelT) -> tuple[ModelT, list[SpecWarning]]:

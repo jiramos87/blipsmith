@@ -9,7 +9,7 @@ model.
 
 from __future__ import annotations
 
-from typing import Any
+from typing import Any, get_origin
 
 import pytest
 from pydantic import BaseModel
@@ -52,11 +52,25 @@ def _minimal_kwargs(model: type[BaseModel]) -> dict[str, Any]:
     return kwargs
 
 
+def _is_list(model_name: str, field_name: str) -> bool:
+    """A list of numbers (a wavetable frame's harmonics) clamps entry by entry."""
+    return get_origin(MODELS[model_name].model_fields[field_name].annotation) is list
+
+
 def _build(model_name: str, field_name: str, value: float) -> BaseModel:
     model = MODELS[model_name]
     kwargs = _minimal_kwargs(model)
-    kwargs[field_name] = value
+    kwargs[field_name] = [value] if _is_list(model_name, field_name) else value
     return model(**kwargs)
+
+
+def _read(model: BaseModel, field_name: str) -> Any:
+    value = getattr(model, field_name)
+    return value[0] if isinstance(value, list) else value
+
+
+def _param(model_name: str, field_name: str) -> str:
+    return f"{field_name}[0]" if _is_list(model_name, field_name) else field_name
 
 
 def _ids(key: tuple[str, str]) -> str:
@@ -71,11 +85,11 @@ def test_clamps_below_minimum(key: tuple[str, str]) -> None:
 
     clamped, warnings = clamp_model(_build(model_name, field_name, requested))
 
-    assert getattr(clamped, field_name) == bounds.minimum
+    assert _read(clamped, field_name) == bounds.minimum
     assert len(warnings) == 1
     warning = warnings[0]
     assert warning.code is WarningCode.CLAMPED
-    assert warning.param == field_name
+    assert warning.param == _param(model_name, field_name)
     assert warning.requested == requested
     assert warning.applied == bounds.minimum
 
@@ -88,11 +102,11 @@ def test_clamps_above_maximum(key: tuple[str, str]) -> None:
 
     clamped, warnings = clamp_model(_build(model_name, field_name, requested))
 
-    assert getattr(clamped, field_name) == bounds.maximum
+    assert _read(clamped, field_name) == bounds.maximum
     assert len(warnings) == 1
     warning = warnings[0]
     assert warning.code is WarningCode.CLAMPED
-    assert warning.param == field_name
+    assert warning.param == _param(model_name, field_name)
     assert warning.requested == requested
     assert warning.applied == bounds.maximum
 
@@ -105,7 +119,7 @@ def test_inclusive_bounds_are_not_clamped(key: tuple[str, str]) -> None:
 
     for edge in (bounds.minimum, bounds.maximum):
         clamped, warnings = clamp_model(_build(model_name, field_name, edge))
-        assert getattr(clamped, field_name) == edge
+        assert _read(clamped, field_name) == edge
         assert warnings == [], f"{_ids(key)} warned at its own bound {edge}"
 
 

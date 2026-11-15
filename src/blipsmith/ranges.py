@@ -46,6 +46,11 @@ MASTER_EFFECT_KINDS = ("delay", "reverb")
 FM4_OPERATORS = 4
 # Music mode, a modal voice: a bank of 1 to this many tuned resonators.
 MODAL_MAX_MODES = 16
+# Music mode, a wavetable: 1 to this many frames, each 1 to this many harmonics.
+WAVETABLE_MAX_FRAMES = 8
+WAVETABLE_MAX_HARMONICS = 64
+# Music mode, an additive voice: 1 to this many partials.
+ADDITIVE_MAX_PARTIALS = 32
 FM4_ALGORITHMS: tuple[tuple[tuple[tuple[int, ...], ...], tuple[int, ...]], ...] = (
     (((), (1,), (2,), (3,)), (4,)),  # 0: 1 > 2 > 3 > 4
     (((), (), (1, 2), (3,)), (4,)),  # 1: (1 + 2) > 3 > 4
@@ -162,9 +167,15 @@ RANGES: dict[tuple[str, str], NumericRange] = {
     ("Effect", "feedback"): NumericRange(
         0, 0.95, 0.35, "", "delay regeneration; capped below runaway"
     ),
-    ("Effect", "mixWet"): NumericRange(0, 1, 0.3, "", "wet/dry balance for delay and reverb"),
+    ("Effect", "mixWet"): NumericRange(
+        0, 1, 0.3, "", "wet/dry balance for delay, reverb and chorus"
+    ),
     ("Effect", "roomSize"): NumericRange(0, 1, 0.5, "", "reverb tail length"),
     ("Effect", "damping"): NumericRange(0, 1, 0.5, "", "reverb high-frequency absorption"),
+    # Chorus only (music mode); left out of the dump unless set, filled for a chorus
+    ("Effect", "delayMs"): NumericRange(1, 40, 12, "ms", "chorus centre delay"),
+    ("Effect", "depthMs"): NumericRange(0, 10, 2, "ms", "chorus swing either side of the centre"),
+    ("Effect", "rateHz"): NumericRange(0.05, 8, 0.8, "Hz", "chorus swing speed"),
     # Touch (music mode): velocity shapes the tone, per note, around a pivot
     ("Touch", "pivot"): NumericRange(
         0, 1, 0.6, "", "the velocity that plays the voice exactly as authored"
@@ -233,6 +244,38 @@ RANGES: dict[tuple[str, str], NumericRange] = {
     ("Mode", "ratio"): NumericRange(0.1, 32, 1, "", "the mode's frequency over the voice's pitch"),
     ("Mode", "level"): NumericRange(0, 1, 1, "", "how loud the mode rings when struck"),
     ("Mode", "decayMs"): NumericRange(5, 30_000, 500, "ms", "time for the mode to fall 60 dB"),
+    # Wavetable (music mode): single-cycle frames crossfaded over the note
+    ("Frame", "harmonics"): NumericRange(
+        -1, 1, 1, "", "amplitude of each harmonic, the first being the fundamental"
+    ),
+    ("Wavetable", "position"): NumericRange(
+        0, 1, 0, "", "where in the frames each note starts; 0 is the first frame, 1 the last"
+    ),
+    ("Wavetable", "positionEnd"): NumericRange(
+        0, 1, 1, "", "optional position the note sweeps to; null holds the start"
+    ),
+    ("Wavetable", "sweepMs"): NumericRange(
+        1, 30_000, 1000, "ms", "time to sweep from the start position to the end"
+    ),
+    # Additive (music mode): a tone built from partials
+    ("Additive", "brightness"): NumericRange(
+        0, 1, 1, "", "how far up the partials reach before they roll off; 1 is no roll-off"
+    ),
+    ("Additive", "stretch"): NumericRange(
+        0, 0.02, 0, "", "how much sharper the upper partials run, as on a piano string"
+    ),
+    ("Partial", "ratio"): NumericRange(
+        0.5, 32, 1, "", "the partial's frequency over the voice's pitch"
+    ),
+    ("Partial", "level"): NumericRange(0, 1, 1, "", "the partial's level against the others"),
+    ("Partial", "decayMs"): NumericRange(
+        0, 30_000, 0, "ms", "time for the partial to fall 60 dB; 0 holds it"
+    ),
+    # Unison (music mode): detuned copies of the voice per note
+    ("Unison", "voices"): NumericRange(2, 8, 2, "", "how many copies play each note", True),
+    ("Unison", "detuneCents"): NumericRange(
+        0, 100, 12, "cents", "spread between the lowest and the highest copy"
+    ),
     # Composition
     ("Composition", "tempoBpm"): NumericRange(20, 300, 120, "BPM", "composition tempo"),
     ("Composition", "swing"): NumericRange(0, 0.75, 0, "", "offbeat delay as a fraction of a step"),

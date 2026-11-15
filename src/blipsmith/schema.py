@@ -140,7 +140,19 @@ def _scalar(annotation: Any) -> str:
 # Fields only a version 2 spec may set.
 _MUSIC_FIELDS: dict[str, tuple[str, ...]] = {
     "Master": ("effects",),
-    "Voice": ("key", "touch", "glide", "vibrato", "fm4", "string", "modal"),
+    "Voice": (
+        "key",
+        "touch",
+        "glide",
+        "vibrato",
+        "fm4",
+        "string",
+        "modal",
+        "wavetable",
+        "additive",
+        "unison",
+    ),
+    "Effect": ("delayMs", "depthMs", "rateHz"),
     "Track": ("name", "effects"),
     "Composition": ("loop",),
 }

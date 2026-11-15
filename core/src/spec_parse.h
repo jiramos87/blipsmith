@@ -68,6 +68,7 @@ enum class EffectKind : int {
     Wavefold,
     Delay,
     Reverb,
+    Chorus,
 };
 
 struct Adsr {
@@ -178,6 +179,35 @@ struct Modal {
     std::vector<Mode> modes;
 };
 
+// Music mode, a wavetable: single-cycle frames as harmonic amplitudes.
+struct Wavetable {
+    std::vector<std::vector<double>> frames;
+    double position = 0.0;
+    // -1 means "no sweep": the note holds its start position.
+    double positionEnd = -1.0;
+    double sweepMs = 1000.0;
+};
+
+// Music mode, one partial of an additive voice. A decay of 0 holds it.
+struct Partial {
+    double ratio = 1.0;
+    double level = 1.0;
+    double decayMs = 0.0;
+};
+
+// Music mode, a tone built from partials in place of the oscillator.
+struct Additive {
+    double brightness = 1.0;
+    double stretch = 0.0;
+    std::vector<Partial> partials;
+};
+
+// Music mode, detuned copies of the voice on every note.
+struct Unison {
+    int voices = 2;
+    double detuneCents = 12.0;
+};
+
 // One flat struct per the published contract: each kind reads the parameters
 // that apply to it and ignores the rest.
 struct Effect {
@@ -188,6 +218,10 @@ struct Effect {
     double mixWet = 0.3;
     double roomSize = 0.5;
     double damping = 0.5;
+    // Chorus only (music mode).
+    double delayMs = 12.0;
+    double depthMs = 2.0;
+    double rateHz = 0.8;
 };
 
 struct Voice {
@@ -236,6 +270,15 @@ struct Voice {
     // Music mode: a bank of tuned resonators in place of the oscillator.
     bool hasModal = false;
     Modal modal;
+    // Music mode: single-cycle frames crossfaded over the note.
+    bool hasWavetable = false;
+    Wavetable wavetable;
+    // Music mode: a tone built from partials.
+    bool hasAdditive = false;
+    Additive additive;
+    // Music mode: detuned copies of the voice on every note.
+    bool hasUnison = false;
+    Unison unison;
 };
 
 // One scheduled event. The Python compiler has already expanded painted steps

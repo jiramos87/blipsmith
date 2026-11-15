@@ -443,6 +443,57 @@ Modal modal_from(const JsonValue& block) {
     return modal;
 }
 
+Wavetable wavetable_from(const JsonValue& block) {
+    Wavetable wavetable;
+    wavetable.position = number_or(block, "position", wavetable.position);
+    wavetable.positionEnd = number_or(block, "positionEnd", wavetable.positionEnd);
+    wavetable.sweepMs = number_or(block, "sweepMs", wavetable.sweepMs);
+    const JsonValue* frames = block.find("frames");
+    if (frames != nullptr && frames->kind == JsonValue::Kind::Array) {
+        for (const JsonValue& entry : frames->items) {
+            const JsonValue* harmonics =
+                entry.kind == JsonValue::Kind::Object ? entry.find("harmonics") : nullptr;
+            std::vector<double> frame;
+            if (harmonics != nullptr && harmonics->kind == JsonValue::Kind::Array) {
+                for (const JsonValue& value : harmonics->items) {
+                    frame.push_back(value.kind == JsonValue::Kind::Number ? value.number : 0.0);
+                }
+            }
+            if (frame.empty()) {
+                frame.push_back(1.0);
+            }
+            wavetable.frames.push_back(frame);
+        }
+    }
+    if (wavetable.frames.empty()) {
+        wavetable.frames.push_back({1.0});
+    }
+    return wavetable;
+}
+
+Additive additive_from(const JsonValue& block) {
+    Additive additive;
+    additive.brightness = number_or(block, "brightness", additive.brightness);
+    additive.stretch = number_or(block, "stretch", additive.stretch);
+    const JsonValue* partials = block.find("partials");
+    if (partials != nullptr && partials->kind == JsonValue::Kind::Array) {
+        for (const JsonValue& entry : partials->items) {
+            if (entry.kind != JsonValue::Kind::Object) {
+                continue;
+            }
+            Partial partial;
+            partial.ratio = number_or(entry, "ratio", partial.ratio);
+            partial.level = number_or(entry, "level", partial.level);
+            partial.decayMs = number_or(entry, "decayMs", partial.decayMs);
+            additive.partials.push_back(partial);
+        }
+    }
+    if (additive.partials.empty()) {
+        additive.partials.push_back(Partial{});
+    }
+    return additive;
+}
+
 Fm4 fm4_from(const JsonValue& block) {
     Fm4 fm4;
     fm4.algorithm = int_or(block, "algorithm", fm4.algorithm);
@@ -479,6 +530,7 @@ EffectKind effect_kind_from(const JsonValue& block) {
     if (found->text == "wavefold") return EffectKind::Wavefold;
     if (found->text == "delay") return EffectKind::Delay;
     if (found->text == "reverb") return EffectKind::Reverb;
+    if (found->text == "chorus") return EffectKind::Chorus;
     return EffectKind::Distortion;
 }
 
@@ -502,6 +554,9 @@ std::vector<Effect> effects_from(const JsonValue& owner) {
         effect.mixWet = number_or(entry, "mixWet", effect.mixWet);
         effect.roomSize = number_or(entry, "roomSize", effect.roomSize);
         effect.damping = number_or(entry, "damping", effect.damping);
+        effect.delayMs = number_or(entry, "delayMs", effect.delayMs);
+        effect.depthMs = number_or(entry, "depthMs", effect.depthMs);
+        effect.rateHz = number_or(entry, "rateHz", effect.rateHz);
         effects.push_back(effect);
     }
     return effects;
@@ -669,6 +724,20 @@ Spec parse_spec(const std::string& json) {
                 if (const JsonValue* block = object_at(entry, "modal")) {
                     voice.hasModal = true;
                     voice.modal = modal_from(*block);
+                }
+                if (const JsonValue* block = object_at(entry, "wavetable")) {
+                    voice.hasWavetable = true;
+                    voice.wavetable = wavetable_from(*block);
+                }
+                if (const JsonValue* block = object_at(entry, "additive")) {
+                    voice.hasAdditive = true;
+                    voice.additive = additive_from(*block);
+                }
+                if (const JsonValue* block = object_at(entry, "unison")) {
+                    voice.hasUnison = true;
+                    voice.unison.voices = int_or(*block, "voices", voice.unison.voices);
+                    voice.unison.detuneCents =
+                        number_or(*block, "detuneCents", voice.unison.detuneCents);
                 }
                 if (const JsonValue* block = object_at(entry, "vibrato")) {
                     voice.hasVibrato = true;

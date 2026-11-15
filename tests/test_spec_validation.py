@@ -69,6 +69,10 @@ def test_voice_surface_matches_prd() -> None:
         "string",
         # docs/prd/blipsmith-drum-kit-two.md: a bank of tuned resonators, version 2 only.
         "modal",
+        # docs/prd/blipsmith-wavetables.md: frames, partials and unison, version 2 only.
+        "wavetable",
+        "additive",
+        "unison",
     }
 
 
@@ -86,7 +90,8 @@ def test_closed_sets_match_prd() -> None:
     assert [t.value for t in LfoTarget] == ["pitch", "amplitude", "cutoff"]
     assert [t.value for t in ModEnvTarget] == ["pitch", "cutoff"]
     assert [m.value for m in AmMode] == ["am", "ring"]
-    assert [k.value for k in EffectKind] == ["distortion", "wavefold", "delay", "reverb"]
+    # docs/prd/blipsmith-wavetables.md adds the chorus, version 2 only.
+    assert [k.value for k in EffectKind] == ["distortion", "wavefold", "delay", "reverb", "chorus"]
     assert [s.value for s in LfoShape] == ["sine", "triangle", "square", "saw"]
 
 
@@ -143,7 +148,7 @@ def test_limiter_cannot_be_disabled() -> None:
         ),
         (one_voice(am={"mode": "phase"}), "voices[0].am.mode", "am"),
         (
-            one_voice(effects=[{"kind": "chorus"}]),
+            one_voice(effects=[{"kind": "phaser"}]),
             "voices[0].effects[0].kind",
             "distortion",
         ),
